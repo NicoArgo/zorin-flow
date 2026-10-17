@@ -1,0 +1,72 @@
+.zf-terminals,
+.zf-places {
+    spacing: 2px;
+}
+
+.zf-icon-button {
+    padding: 0 4px;
+    border-radius: 6px;
+}
+
+.zf-icon-button:hover .system-status-icon {
+    icon-size: 20px;
+}
+
+.zf-dots {
+    spacing: 0;
+    padding-left: 2px;
+}
+
+.zf-dot-button {
+    padding: 4px 3px;
+    border-radius: 99px;
+}
+
+.zf-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 99px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.zf-dot-neutral {
+    background-color: #9a9996;
+}
+
+.zf-dot-hover {
+    width: 13px;
+    height: 13px;
+}
+
+.zf-dot-focused {
+    border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.zf-dots-more {
+    font-size: 0.85em;
+    padding-left: 3px;
+}
+
+.zf-tooltip {
+    background-color: rgba(30, 30, 34, 0.95);
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+.zf-vampire-on {
+    color: #ff5c6c;
+}
+
+.zf-clip-menu {
+    min-width: 360px;
+}
+
+.zf-clip-entry {
+    min-width: 330px;
+}
+
+.zf-clip-scroll {
+    max-height: 420px;
+}

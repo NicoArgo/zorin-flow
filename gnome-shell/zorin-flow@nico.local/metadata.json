@@ -1,0 +1,9 @@
+{
+  "uuid": "zorin-flow@nico.local",
+  "name": "Zorin Flow",
+  "description": "Applet de terminais na cor da pasta, botões Imagens/Downloads/Área de trabalho, modo vampiro, histórico da área de transferência (Super+V) e tema que segue o papel de parede. Port das ideias do POP Flow para o Zorin OS.",
+  "shell-version": ["46"],
+  "settings-schema": "org.gnome.shell.extensions.zorin-flow",
+  "url": "https://github.com/NicoArgo/POP-Flow-Suite",
+  "version": 1
+}

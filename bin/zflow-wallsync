@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""zflow-wallsync — a cor de destaque do Zorin segue o papel de parede.
+
+Pega a cor dominante do papel de parede atual e aplica o acento do Zorin mais
+próximo (Blue, Green, Orange, Purple, Red, Yellow, Brown ou Grey), mantendo
+claro/escuro como está. Aplica do mesmo jeito que o Zorin Appearance: tema GTK,
+tema do Shell, ícones e o par dia/noite do Auto Theme.
+
+A extensão Zorin Flow roda isto sozinha quando o papel de parede muda.
+
+  zflow-wallsync                 aplica
+  zflow-wallsync --dry-run       só mostra o que escolheria
+  zflow-wallsync --image FOTO    usa outra imagem (para testar)
+"""
+
+import argparse
+import colorsys
+import os
+import sys
+from urllib.parse import unquote, urlparse
+
+from gi.repository import Gio
+
+# Matiz de referência de cada acento (graus). Brown e Grey são tratados à parte.
+ACCENT_HUES = {
+    "Red": 355, "Orange": 25, "Yellow": 48, "Green": 125, "Blue": 205, "Purple": 272,
+}
+
+
+def schema(schema_id):
+    source = Gio.SettingsSchemaSource.get_default()
+    if source.lookup(schema_id, True) is None:
+        return None
+    return Gio.Settings.new(schema_id)
+
+
+def wallpaper_path():
+    bg = Gio.Settings.new("org.gnome.desktop.background")
+    dark = Gio.Settings.new("org.gnome.desktop.interface").get_string("color-scheme") == "prefer-dark"
+    uri = bg.get_string("picture-uri-dark" if dark else "picture-uri") or bg.get_string("picture-uri")
+    if not uri:
+        return None
+    path = unquote(urlparse(uri).path) if uri.startswith("file://") else uri
+    return path if os.path.isfile(path) else None
+
+
+def dominant_accent(image_path):
+    from PIL import Image
+
+    im = Image.open(image_path).convert("RGB")
+    im.thumbnail((120, 120))
+    bins = [0.0] * 36
+    vals = [0.0] * 36
+    total = 0.0
+    for r, g, b in im.getdata():
+        h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+        total += 1
+        if s < 0.22 or v < 0.18:
+            continue
+        w = s * v
+        i = int(h * 36) % 36
+        bins[i] += w
+        vals[i] += w * v
+    colorful = sum(bins)
+    if total == 0 or colorful / total < 0.04:
+        return "Grey", None
+    # Junta cada bin com os vizinhos para achar a região de matiz mais forte.
+    smooth = [bins[i - 1] + bins[i] * 2 + bins[(i + 1) % 36] for i in range(36)]
+    i = max(range(36), key=smooth.__getitem__)
+    hue = i * 10 + 5
+    mean_v = vals[i] / bins[i] if bins[i] else 1
+
+    if 12 <= hue <= 45 and mean_v < 0.55:
+        return "Brown", hue
+
+    def dist(a, b):
+        d = abs(a - b) % 360
+        return min(d, 360 - d)
+    return min(ACCENT_HUES, key=lambda k: dist(ACCENT_HUES[k], hue)), hue
+
+
+def apply(color):
+    iface = Gio.Settings.new("org.gnome.desktop.interface")
+    current = iface.get_string("gtk-theme")
+    variant = "Dark" if current.endswith("-Dark") or (
+        not current.endswith("-Light") and iface.get_string("color-scheme") == "prefer-dark") else "Light"
+    new_theme = f"Zorin{color}-{variant}"
+    if not os.path.isdir(f"/usr/share/themes/{new_theme}"):
+        print(f"tema {new_theme} não existe; nada feito", file=sys.stderr)
+        return False
+    if current == new_theme:
+        return False
+
+    auto = schema("com.zorin.desktop.auto-theme")
+    if auto is not None:
+        auto.set_string("day-theme", f"Zorin{color}-Light")
+        auto.set_string("night-theme", f"Zorin{color}-Dark")
+    shell = schema("org.gnome.shell.extensions.user-theme")
+    if shell is not None:
+        shell.set_string("name", new_theme)
+    iface.set_string("gtk-theme", new_theme)
+    if os.path.isdir(f"/usr/share/icons/{new_theme}"):
+        iface.set_string("icon-theme", new_theme)
+    Gio.Settings.sync()
+    return True
+
+
+def main():
+    p = argparse.ArgumentParser(prog="zflow-wallsync")
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--image")
+    a = p.parse_args()
+
+    image = a.image or wallpaper_path()
+    if not image:
+        print("papel de parede não encontrado (ou é uma apresentação .xml)", file=sys.stderr)
+        return 1
+    color, hue = dominant_accent(image)
+    print(f"{os.path.basename(image)}: matiz {hue if hue is not None else '-'} → Zorin{color}")
+    if not a.dry_run and apply(color):
+        print("aplicado")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

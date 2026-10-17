@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""zflow-rule — regras por pasta do Zorin Flow (nome + cor).
+
+  zflow-rule set [PASTA] [--name NOME] [--color #rrggbb] [--subdirs | --no-subdirs]
+  zflow-rule remove [PASTA]
+  zflow-rule get [PASTA]        regra que vale para a pasta (inclusive herdada)
+  zflow-rule list
+  zflow-rule edit [PASTA]       abre o diálogo "Regra da pasta…"
+  zflow-rule sync               regera cache e ícones depois de editar o JSON à mão
+
+PASTA padrão: a pasta atual.
+"""
+
+import argparse
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+import zflow_rules as zr  # noqa: E402
+
+
+def fmt(rule):
+    flags = []
+    if rule.include_subdirs:
+        flags.append("subpastas")
+    if not rule.enabled:
+        flags.append("desligada")
+    color = rule.accent or "-"
+    swatch = ""
+    if rule.accent and sys.stdout.isatty():
+        r, g, b = zr._hex_to_rgb(rule.accent)
+        swatch = f"\033[38;2;{r};{g};{b}m●\033[0m "
+    extra = f"  ({', '.join(flags)})" if flags else ""
+    return f"{swatch}{color}  {rule.name or '(sem nome)'}  {rule.path}{extra}"
+
+
+def cmd_edit(path):
+    import gi
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+    from gi.repository import Adw, Gdk, Gtk
+
+    path = zr.normalize(path)
+    existing = zr.find(zr.load(), path)
+    app = Adw.Application(application_id=None)
+
+    def rgba_to_hex(rgba):
+        return "#%02x%02x%02x" % tuple(round(c * 255) for c in (rgba.red, rgba.green, rgba.blue))
+
+    def on_activate(app):
+        win = Adw.Window(application=app, title="Regra da pasta", default_width=420, modal=True)
+        win.set_resizable(False)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        header = Adw.HeaderBar()
+        box.append(header)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18,
+                          margin_top=12, margin_bottom=18, margin_start=18, margin_end=18)
+        box.append(content)
+
+        folder = Gtk.Label(label=path.replace(zr.HOME, "~", 1), xalign=0, wrap=True,
+                           css_classes=["dim-label"], selectable=True)
+        content.append(folder)
+
+        group = Adw.PreferencesGroup()
+        content.append(group)
+
+        name_row = Adw.EntryRow(title="Nome")
+        name_row.set_text(existing.name if existing else os.path.basename(path) or path)
+        group.add(name_row)
+
+        color_row = Adw.ActionRow(title="Cor")
+        color_btn = Gtk.ColorDialogButton(dialog=Gtk.ColorDialog(with_alpha=False), valign=Gtk.Align.CENTER)
+        rgba = Gdk.RGBA()
+        rgba.parse(existing.accent if existing and existing.accent else zr.PALETTE[1])
+        color_btn.set_rgba(rgba)
+        color_row.add_suffix(color_btn)
+        group.add(color_row)
+
+        swatches = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, max_children_per_line=12,
+                               min_children_per_line=6, column_spacing=6, row_spacing=6,
+                               homogeneous=True)
+        css = Gtk.CssProvider()
+        css.load_from_string("".join(
+            f".zf-sw-{c[1:]} {{ background: {c}; min-width: 24px; min-height: 24px; "
+            f"border-radius: 99px; padding: 0; border: 1px solid alpha(currentColor, .25); }}"
+            for c in zr.PALETTE))
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css,
+                                                  Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        for c in zr.PALETTE:
+            b = Gtk.Button(css_classes=[f"zf-sw-{c[1:]}"], tooltip_text=c)
+
+            def pick(_b, c=c):
+                v = Gdk.RGBA()
+                v.parse(c)
+                color_btn.set_rgba(v)
+            b.connect("clicked", pick)
+            swatches.append(b)
+        content.append(swatches)
+
+        group2 = Adw.PreferencesGroup()
+        content.append(group2)
+        subdirs_row = Adw.SwitchRow(title="Incluir subpastas",
+                                    subtitle="A regra também vale para tudo dentro desta pasta")
+        subdirs_row.set_active(existing.include_subdirs if existing else False)
+        group2.add(subdirs_row)
+
+        buttons = Gtk.Box(spacing=12, homogeneous=True)
+        content.append(buttons)
+        remove_btn = Gtk.Button(label="Remover regra", css_classes=["destructive-action"],
+                                sensitive=existing is not None)
+        save_btn = Gtk.Button(label="Salvar", css_classes=["suggested-action"])
+        buttons.append(remove_btn)
+        buttons.append(save_btn)
+
+        def on_save(*_):
+            zr.set_rule(path, name=name_row.get_text().strip(),
+                        accent=rgba_to_hex(color_btn.get_rgba()),
+                        include_subdirs=subdirs_row.get_active(), enabled=True)
+            win.close()
+
+        def on_remove(*_):
+            zr.remove_rule(path)
+            win.close()
+
+        save_btn.connect("clicked", on_save)
+        remove_btn.connect("clicked", on_remove)
+        name_row.connect("entry-activated", on_save)
+
+        keys = Gtk.EventControllerKey()
+        keys.connect("key-pressed", lambda _c, kv, _k, _m: (win.close() or True) if kv == Gdk.KEY_Escape else False)
+        win.add_controller(keys)
+
+        win.set_content(box)
+        win.present()
+
+    app.connect("activate", on_activate)
+    app.run([])
+
+
+def main():
+    p = argparse.ArgumentParser(prog="zflow-rule", description="Regras por pasta do Zorin Flow")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    s = sub.add_parser("set", help="cria ou altera a regra de uma pasta")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--name")
+    s.add_argument("--color")
+    g = s.add_mutually_exclusive_group()
+    g.add_argument("--subdirs", dest="subdirs", action="store_true", default=None)
+    g.add_argument("--no-subdirs", dest="subdirs", action="store_false")
+    g2 = s.add_mutually_exclusive_group()
+    g2.add_argument("--enable", dest="enabled", action="store_true", default=None)
+    g2.add_argument("--disable", dest="enabled", action="store_false")
+
+    for name, help_ in (("remove", "remove a regra da pasta"),
+                        ("get", "mostra a regra que vale para a pasta"),
+                        ("edit", "abre o diálogo de regra")):
+        sp = sub.add_parser(name, help=help_)
+        sp.add_argument("path", nargs="?", default=".")
+    sub.add_parser("list", help="lista as regras")
+    sub.add_parser("sync", help="regera cache e ícones")
+
+    a = p.parse_args()
+    try:
+        if a.cmd == "set":
+            print(fmt(zr.set_rule(a.path, a.name, a.color, a.subdirs, a.enabled)))
+        elif a.cmd == "remove":
+            if not zr.remove_rule(a.path):
+                print("nenhuma regra nesta pasta", file=sys.stderr)
+                return 1
+        elif a.cmd == "get":
+            r = zr.match(zr.load(), a.path)
+            if r is None:
+                return 1
+            print(fmt(r))
+        elif a.cmd == "list":
+            for r in zr.load():
+                print(fmt(r))
+        elif a.cmd == "sync":
+            print(f"{len(zr.sync())} regra(s) sincronizada(s)")
+        elif a.cmd == "edit":
+            cmd_edit(a.path)
+    except ValueError as e:
+        print(f"zflow-rule: {e}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

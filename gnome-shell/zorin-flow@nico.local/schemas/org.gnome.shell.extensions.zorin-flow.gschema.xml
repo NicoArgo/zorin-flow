@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.zorin-flow" path="/org/gnome/shell/extensions/zorin-flow/">
+    <key name="show-terminals" type="b">
+      <default>true</default>
+      <summary>Applet de terminais (botão + uma bolinha por janela na cor da pasta)</summary>
+    </key>
+    <key name="terminal-borders" type="b">
+      <default>true</default>
+      <summary>Contorno na cor da pasta em volta das janelas do terminal</summary>
+    </key>
+    <key name="terminal-border-width" type="i">
+      <range min="1" max="12"/>
+      <default>3</default>
+      <summary>Espessura do contorno (px)</summary>
+    </key>
+    <key name="terminal-border-radius" type="i">
+      <range min="0" max="30"/>
+      <default>12</default>
+      <summary>Arredondamento dos cantos da janela (px)</summary>
+    </key>
+    <key name="show-places" type="b">
+      <default>true</default>
+      <summary>Botões Imagens, Downloads e Mostrar área de trabalho</summary>
+    </key>
+    <key name="show-vampire" type="b">
+      <default>true</default>
+      <summary>Modo vampiro no painel</summary>
+    </key>
+    <key name="vampire-until" type="x">
+      <default>0</default>
+      <summary>Modo vampiro ativo até (unix, s); -1 = até desligar; 0 = desligado</summary>
+    </key>
+    <key name="clipboard-enabled" type="b">
+      <default>true</default>
+      <summary>Histórico da área de transferência</summary>
+    </key>
+    <key name="clipboard-shortcut" type="as">
+      <default><![CDATA[['<Super>v']]]></default>
+      <summary>Atalho do histórico</summary>
+    </key>
+    <key name="clipboard-size" type="i">
+      <range min="5" max="200"/>
+      <default>30</default>
+      <summary>Quantos itens guardar</summary>
+    </key>
+    <key name="clipboard-paste-on-select" type="b">
+      <default>true</default>
+      <summary>Colar direto ao escolher um item (como o Win+V)</summary>
+    </key>
+    <key name="wallsync" type="b">
+      <default>true</default>
+      <summary>Cor de destaque do tema segue o papel de parede</summary>
+    </key>
+  </schema>
+</schemalist>
