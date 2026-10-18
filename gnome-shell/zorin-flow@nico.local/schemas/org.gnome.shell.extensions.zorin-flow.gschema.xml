@@ -27,6 +27,10 @@
       <default>true</default>
       <summary>Clicar no canto inferior esquerdo mostra a área de trabalho</summary>
     </key>
+    <key name="desktop-corner-right" type="b">
+      <default>true</default>
+      <summary>Encostar o mouse no canto inferior direito mostra a área de trabalho</summary>
+    </key>
     <key name="desktop-corner-size" type="i">
       <range min="2" max="40"/>
       <default>8</default>

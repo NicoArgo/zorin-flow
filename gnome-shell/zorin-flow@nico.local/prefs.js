@@ -10,6 +10,7 @@ const SWITCHES = [
     ['Janelas', [
         ['alttab-close', 'Fechar pelo Alt+Tab', 'X na miniatura selecionada ou sob o mouse; clique do meio também fecha'],
         ['desktop-corner', 'Canto inferior esquerdo → área de trabalho', 'Clicar na quina mostra a área de trabalho; clicar de novo devolve as janelas'],
+        ['desktop-corner-right', 'Canto inferior direito → área de trabalho', 'Basta encostar o mouse na quina; encostar de novo devolve as janelas'],
     ]],
     ['Painel', [
         ['show-terminals', 'Applet de terminais', 'Botão de novo terminal e uma bolinha por janela, na cor da pasta'],
@@ -52,7 +53,7 @@ export default class ZorinFlowPrefs extends ExtensionPreferences {
             }
             if (title === 'Janelas') {
                 const spin = new Adw.SpinRow({
-                    title: 'Tamanho da área do canto (px)',
+                    title: 'Tamanho da área dos cantos (px)',
                     adjustment: new Gtk.Adjustment({lower: 2, upper: 40, step_increment: 1}),
                 });
                 settings.bind('desktop-corner-size', spin, 'value', Gio.SettingsBindFlags.DEFAULT);
