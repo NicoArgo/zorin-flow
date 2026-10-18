@@ -64,9 +64,11 @@ tocada.
 
 ## Configurações
 
-`gnome-extensions prefs zorin-flow@nico.local` — liga/desliga cada peça e, em
-**Posição no painel**, escolhe o lado (esquerda/centro/direita) e a ordem de
-cada applet; o painel muda na hora.
+Pela engrenagem no painel, ou `gnome-extensions prefs zorin-flow@nico.local`:
+liga/desliga cada peça e, em **Posição no painel**, mostra uma barra como a do
+painel com um chip por applet — arraste para mudar o lado
+(esquerda/centro/direita) e a ordem, ou clique num chip para movê-lo por
+botões. O painel muda na hora.
 
 ## Licença
 

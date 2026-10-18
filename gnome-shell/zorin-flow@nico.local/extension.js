@@ -21,6 +21,7 @@ import {forgetHidden} from './desktop.js';
 import {ClipboardButton, clearHistory} from './clipboard.js';
 import {BOXES, readLayout} from './layout.js';
 import {PlacesButton} from './places.js';
+import {SettingsButton} from './settingsButton.js';
 import {TerminalsButton} from './terminals.js';
 import {TilingButton, tilingAvailable} from './tiling.js';
 import {Tooltip} from './tooltip.js';
@@ -40,6 +41,7 @@ export default class ZorinFlowExtension extends Extension {
             ['places', ['show-places', () => new PlacesButton(this._tooltip)]],
             ['clipboard', ['clipboard-enabled', () => new ClipboardButton(this._settings)]],
             ['vampire', ['show-vampire', () => new VampireButton(this._settings)]],
+            ['settings', ['show-settings', () => new SettingsButton(this._tooltip, () => this.openPreferences())]],
         ]);
         if (tilingAvailable())
             this._parts.set('tiling', ['show-tiling', () => new TilingButton(this._settings)]);

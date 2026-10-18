@@ -1,90 +1,9 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {APPLETS, BOXES, BOX_TITLES, readLayout, writeLayout} from './layout.js';
-
-// Lado e ordem de cada applet: um seletor de lado e setas para subir/descer
-// dentro do lado. A extensão remonta o painel na hora.
-function panelLayoutGroup(settings) {
-    const group = new Adw.PreferencesGroup({
-        title: 'Posição no painel',
-        description: 'Lado e ordem de cada applet; muda na hora',
-    });
-    const titles = Object.fromEntries(APPLETS.map(a => [a.role, a.title]));
-    let rows = [];
-    let rebuildId = 0;
-
-    const move = (role, toBox, delta) => {
-        const layout = readLayout(settings);
-        const fromBox = BOXES.find(b => layout[b].includes(role));
-        const list = layout[fromBox];
-        const i = list.indexOf(role);
-        if (toBox !== fromBox) {
-            list.splice(i, 1);
-            layout[toBox].push(role);
-        } else {
-            const j = i + delta;
-            if (j < 0 || j >= list.length)
-                return;
-            [list[i], list[j]] = [list[j], list[i]];
-        }
-        writeLayout(settings, layout);
-    };
-
-    const build = () => {
-        for (const row of rows)
-            group.remove(row);
-        rows = [];
-        const layout = readLayout(settings);
-        for (const box of BOXES) {
-            layout[box].forEach((role, i) => {
-                const row = new Adw.ActionRow({title: titles[role]});
-
-                const side = Gtk.DropDown.new_from_strings(BOXES.map(b => BOX_TITLES[b]));
-                side.selected = BOXES.indexOf(box);
-                side.valign = Gtk.Align.CENTER;
-                side.connect('notify::selected', () => move(role, BOXES[side.selected], 0));
-                row.add_suffix(side);
-
-                for (const [icon, delta, enabled] of [
-                    ['go-up-symbolic', -1, i > 0],
-                    ['go-down-symbolic', 1, i < layout[box].length - 1],
-                ]) {
-                    const btn = new Gtk.Button({
-                        icon_name: icon,
-                        valign: Gtk.Align.CENTER,
-                        sensitive: enabled,
-                        css_classes: ['flat'],
-                        tooltip_text: delta < 0 ? 'Mais para a esquerda' : 'Mais para a direita',
-                    });
-                    btn.connect('clicked', () => move(role, box, delta));
-                    row.add_suffix(btn);
-                }
-                group.add(row);
-                rows.push(row);
-            });
-        }
-    };
-
-    // Reconstrói fora do handler que mudou a configuração (o widget que
-    // disparou a mudança é um dos que serão trocados).
-    for (const box of BOXES) {
-        settings.connect(`changed::panel-${box}`, () => {
-            if (rebuildId)
-                return;
-            rebuildId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                rebuildId = 0;
-                build();
-                return GLib.SOURCE_REMOVE;
-            });
-        });
-    }
-    build();
-    return group;
-}
+import {panelEditorGroup} from './prefsPanel.js';
 
 const SWITCHES = [
     ['Terminal', [
@@ -100,6 +19,7 @@ const SWITCHES = [
         ['show-terminals', 'Applet de terminais', 'Botão de novo terminal e uma bolinha por janela, na cor da pasta'],
         ['show-places', 'Imagens, Downloads e Área de trabalho', 'Atalhos no painel'],
         ['show-vampire', 'Modo vampiro', 'O PC só dorme quando você manda (1 h, 3 h ou até desligar)'],
+        ['show-settings', 'Botão de configurações', 'Engrenagem no painel que abre esta janela'],
     ]],
     ['Área de transferência', [
         ['clipboard-enabled', 'Histórico (Super+V)', 'Só texto, só na memória; senhas marcadas são ignoradas'],
@@ -153,7 +73,7 @@ export default class ZorinFlowPrefs extends ExtensionPreferences {
             }
             page.add(group);
             if (title === 'Painel')
-                page.add(panelLayoutGroup(settings));
+                page.add(panelEditorGroup(settings));
         }
 
         const rules = new Adw.PreferencesGroup({

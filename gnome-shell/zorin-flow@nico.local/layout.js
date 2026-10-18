@@ -6,11 +6,12 @@
 // novo) entra no fim do seu lado padrão.
 
 export const APPLETS = [
-    {role: 'terminals', title: 'Terminais', box: 'left'},
-    {role: 'places', title: 'Imagens, Downloads e Área de trabalho', box: 'left'},
-    {role: 'tiling', title: 'Tiling automático', box: 'left'},
-    {role: 'clipboard', title: 'Área de transferência', box: 'right'},
-    {role: 'vampire', title: 'Modo vampiro', box: 'right'},
+    {role: 'terminals', title: 'Terminais', short: 'Terminais', icon: 'utilities-terminal-symbolic', box: 'left'},
+    {role: 'places', title: 'Imagens, Downloads e Área de trabalho', short: 'Atalhos', icon: 'folder-pictures-symbolic', box: 'left'},
+    {role: 'tiling', title: 'Tiling automático', short: 'Tiling', icon: 'view-grid-symbolic', box: 'left'},
+    {role: 'settings', title: 'Configurações do Zorin Flow', short: 'Config.', icon: 'emblem-system-symbolic', box: 'left'},
+    {role: 'clipboard', title: 'Área de transferência', short: 'Transfer.', icon: 'edit-paste-symbolic', box: 'right'},
+    {role: 'vampire', title: 'Modo vampiro', short: 'Vampiro', icon: 'weather-clear-night-symbolic', box: 'right'},
 ];
 
 export const BOXES = ['left', 'center', 'right'];

@@ -2,7 +2,7 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.zorin-flow" path="/org/gnome/shell/extensions/zorin-flow/">
     <key name="panel-left" type="as">
-      <default><![CDATA[['terminals', 'places', 'tiling']]]></default>
+      <default><![CDATA[['terminals', 'places', 'tiling', 'settings']]]></default>
       <summary>Applets à esquerda do painel, na ordem</summary>
     </key>
     <key name="panel-center" type="as">
@@ -12,6 +12,10 @@
     <key name="panel-right" type="as">
       <default><![CDATA[['clipboard', 'vampire']]]></default>
       <summary>Applets à direita do painel, na ordem</summary>
+    </key>
+    <key name="show-settings" type="b">
+      <default>true</default>
+      <summary>Botão de configurações do Zorin Flow no painel</summary>
     </key>
     <key name="show-terminals" type="b">
       <default>true</default>
