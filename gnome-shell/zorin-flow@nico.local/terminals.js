@@ -1,4 +1,4 @@
-// Applet de terminais:  [>_] ● ● ●
+// Terminais no painel:  [>_]  e  ● ● ●  (dois itens independentes)
 //
 // O botão abre um terminal novo; cada bolinha é uma janela do GNOME Terminal,
 // na cor da regra da pasta em que a aba ativa dela está. A cor vem dos arquivos
@@ -13,12 +13,12 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+
+import {PanelItem, iconButton} from './item.js';
 
 const MAX_DOTS = 8;
 const TERMINAL_APP = 'org.gnome.Terminal.desktop';
@@ -64,31 +64,36 @@ export function readPresence() {
     return list;
 }
 
-export const TerminalsButton = GObject.registerClass(
-class TerminalsButton extends PanelMenu.Button {
-    _init(tooltip) {
-        super._init(0.0, 'Zorin Flow: terminais', true);
-        this.add_style_class_name('zf-terminals-button');
+function openTerminal() {
+    const app = Shell.AppSystem.get_default().lookup_app(TERMINAL_APP);
+    if (app)
+        app.open_new_window(-1);
+    else
+        GLib.spawn_command_line_async('x-terminal-emulator');
+}
+
+// Botão >_ : abre um terminal novo, sempre.
+export class TerminalNewItem extends PanelItem {
+    constructor(tooltip) {
+        super();
+        const btn = iconButton('utilities-terminal-symbolic', openTerminal);
+        tooltip.attach(btn, () => 'Novo terminal');
+        this.actor.add_child(btn);
+    }
+}
+
+// Uma bolinha por janela do terminal, na cor da pasta.
+export class TerminalDotsItem extends PanelItem {
+    constructor(tooltip) {
+        super();
         this._tooltip = tooltip;
         this._order = new Map();     // MetaWindow -> número de chegada
         this._winSignals = new Map(); // MetaWindow -> [ids]
         this._seq = 0;
         this._presence = [];
 
-        const box = new St.BoxLayout({style_class: 'zf-terminals', y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(box);
-
-        const newBtn = new St.Button({
-            style_class: 'zf-icon-button',
-            y_align: Clutter.ActorAlign.CENTER,
-            child: new St.Icon({icon_name: 'utilities-terminal-symbolic', style_class: 'system-status-icon'}),
-        });
-        newBtn.connect('clicked', () => this._openTerminal());
-        tooltip.attach(newBtn, () => 'Novo terminal');
-        box.add_child(newBtn);
-
         this._dots = new St.BoxLayout({style_class: 'zf-dots', y_align: Clutter.ActorAlign.CENTER});
-        box.add_child(this._dots);
+        this.actor.add_child(this._dots);
 
         GLib.mkdir_with_parents(PRESENCE_DIR, 0o700);
         this._monitor = Gio.File.new_for_path(PRESENCE_DIR).monitor_directory(Gio.FileMonitorFlags.NONE, null);
@@ -108,8 +113,6 @@ class TerminalsButton extends PanelMenu.Button {
         for (const actor of global.get_window_actors())
             this._track(actor.meta_window, false);
         this._render();
-
-        this.connect('destroy', () => this._onDestroy());
     }
 
     _track(win, render = true) {
@@ -183,14 +186,6 @@ class TerminalsButton extends PanelMenu.Button {
             this._dots.add_child(new St.Label({text: `+${extra}`, style_class: 'zf-dots-more', y_align: Clutter.ActorAlign.CENTER}));
     }
 
-    _openTerminal() {
-        const app = Shell.AppSystem.get_default().lookup_app(TERMINAL_APP);
-        if (app)
-            app.open_new_window(-1);
-        else
-            GLib.spawn_command_line_async('x-terminal-emulator');
-    }
-
     _onDestroy() {
         if (this._reloadId)
             GLib.source_remove(this._reloadId);
@@ -205,4 +200,4 @@ class TerminalsButton extends PanelMenu.Button {
         this._winSignals.clear();
         this._order.clear();
     }
-});
+}

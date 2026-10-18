@@ -1,11 +1,12 @@
 // Zorin Flow — as ideias do POP Flow (NicoArgo/POP-Flow-Suite) no Zorin OS.
 //
-// Cada peça liga/desliga sozinha pelas configurações da extensão:
-//   terminals.js  applet de terminais na cor da pasta
-//   borders.js    contorno na cor da pasta em volta das janelas do terminal
+// Cada peça liga/desliga sozinha pelas configurações da extensão. Os itens do
+// painel são independentes e agrupáveis (item.js, layout.js):
+//   terminals.js  novo terminal + bolinhas na cor da pasta
+//   borders.js    contorno na cor da pasta + botão Regra da pasta no terminal
 //   alttab.js     X para fechar janelas no Alt+Tab
 //   corner.js     cantos inferiores → área de trabalho (clique / encostar)
-//   places.js     Imagens / Downloads / Mostrar área de trabalho
+//   places.js     Imagens / Downloads / Mostrar área de trabalho / engrenagem
 //   tiling.js     botão de tiling automático (Zorin Tiling Shell), Super+Y
 //   vampire.js    modo vampiro
 //   clipboard.js  histórico da área de transferência (Super+V)
@@ -18,14 +19,14 @@ import {AltTabClose} from './alttab.js';
 import {TerminalBorders} from './borders.js';
 import {DesktopCorners} from './corner.js';
 import {forgetHidden} from './desktop.js';
-import {ClipboardButton, clearHistory} from './clipboard.js';
-import {BOXES, readLayout} from './layout.js';
-import {PlacesButton} from './places.js';
-import {SettingsButton} from './settingsButton.js';
-import {TerminalsButton} from './terminals.js';
-import {TilingButton, tilingAvailable} from './tiling.js';
+import {ClipboardItem, clearHistory} from './clipboard.js';
+import {PanelGroup} from './item.js';
+import {BOXES, readHidden, readLayout} from './layout.js';
+import {DesktopItem, DownloadsItem, PicturesItem, SettingsItem} from './places.js';
+import {TerminalDotsItem, TerminalNewItem} from './terminals.js';
+import {TilingItem, tilingAvailable} from './tiling.js';
 import {Tooltip} from './tooltip.js';
-import {VampireButton} from './vampire.js';
+import {VampireItem} from './vampire.js';
 import {WallSync} from './wallsync.js';
 
 export default class ZorinFlowExtension extends Extension {
@@ -34,23 +35,26 @@ export default class ZorinFlowExtension extends Extension {
         this._tooltip = new Tooltip();
         this._items = new Map();
 
-        // papel no painel -> [chave que liga/desliga, fábrica]. Lado e ordem
-        // vêm das configurações (layout.js).
-        this._parts = new Map([
-            ['terminals', ['show-terminals', () => new TerminalsButton(this._tooltip)]],
-            ['places', ['show-places', () => new PlacesButton(this._tooltip)]],
-            ['clipboard', ['clipboard-enabled', () => new ClipboardButton(this._settings)]],
-            ['vampire', ['show-vampire', () => new VampireButton(this._settings)]],
-            ['settings', ['show-settings', () => new SettingsButton(this._tooltip, () => this.openPreferences())]],
+        // item -> fábrica. Lado, grupo, ordem e visibilidade vêm das
+        // configurações (layout.js).
+        const t = this._tooltip;
+        this._factories = new Map([
+            ['terminal-new', () => new TerminalNewItem(t)],
+            ['terminal-dots', () => new TerminalDotsItem(t)],
+            ['pictures', () => new PicturesItem(t)],
+            ['downloads', () => new DownloadsItem(t)],
+            ['desktop', () => new DesktopItem(t)],
+            ['settings', () => new SettingsItem(t, () => this.openPreferences())],
+            ['clipboard', () => new ClipboardItem(this._settings)],
+            ['vampire', () => new VampireItem(this._settings)],
         ]);
         if (tilingAvailable())
-            this._parts.set('tiling', ['show-tiling', () => new TilingButton(this._settings)]);
+            this._factories.set('tiling', () => new TilingItem(this._settings));
         this._layoutSig = null;
 
         const keys = [
-            ...[...this._parts.values()].map(([key]) => key),
-            ...BOXES.map(box => `panel-${box}`),
-            'terminal-borders', 'alttab-close', 'desktop-corner', 'desktop-corner-right',
+            'panel-layout', 'panel-hidden',
+            'terminal-borders', 'terminal-rule-button', 'alttab-close', 'desktop-corner', 'desktop-corner-right',
         ];
         this._settingsIds = keys.map(key =>
             this._settings.connect(`changed::${key}`, () => this._sync()));
@@ -60,10 +64,11 @@ export default class ZorinFlowExtension extends Extension {
     }
 
     _syncPanel() {
-        // Applets ligados, por lado, na ordem das configurações.
         const layout = readLayout(this._settings);
-        const wanted = BOXES.map(box => [box, layout[box].filter(role =>
-            this._parts.has(role) && this._settings.get_boolean(this._parts.get(role)[0]))]);
+        const hidden = readHidden(this._settings);
+        const wanted = BOXES.map(box => [box, layout[box]
+            .map(group => group.filter(id => this._factories.has(id) && !hidden.has(id)))
+            .filter(group => group.length)]);
         const sig = JSON.stringify(wanted);
         if (sig === this._layoutSig)
             return;
@@ -71,14 +76,16 @@ export default class ZorinFlowExtension extends Extension {
 
         // Remonta tudo: o addToStatusArea é o caminho que o painel do Zorin
         // acompanha, e assim a ordem sai sempre exata.
-        for (const item of this._items.values())
-            item.destroy();
+        for (const group of this._items.values())
+            group.destroy();
         this._items.clear();
-        for (const [box, roles] of wanted) {
-            roles.forEach((role, index) => {
-                const item = this._parts.get(role)[1]();
-                Main.panel.addToStatusArea(`zorin-flow-${role}`, item, index, box);
-                this._items.set(role, item);
+        for (const [box, groups] of wanted) {
+            groups.forEach((ids, index) => {
+                const role = `zorin-flow-${box}-${index}`;
+                const group = new PanelGroup(`Zorin Flow: ${ids.join(', ')}`,
+                    ids.map(id => this._factories.get(id)()));
+                Main.panel.addToStatusArea(role, group, index, box);
+                this._items.set(role, group);
             });
         }
     }
@@ -86,7 +93,9 @@ export default class ZorinFlowExtension extends Extension {
     _sync() {
         this._syncPanel();
 
-        const borders = this._settings.get_boolean('terminal-borders');
+        // Contorno e botão de regra moram no mesmo módulo (borders.js).
+        const borders = this._settings.get_boolean('terminal-borders') ||
+            this._settings.get_boolean('terminal-rule-button');
         if (borders && !this._borders) {
             this._borders = new TerminalBorders(this._settings);
         } else if (!borders && this._borders) {
@@ -132,6 +141,6 @@ export default class ZorinFlowExtension extends Extension {
         this._tooltip = null;
         this._settings = null;
         this._items = null;
-        this._parts = null;
+        this._factories = null;
     }
 }

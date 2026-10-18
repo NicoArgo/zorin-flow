@@ -1,17 +1,14 @@
-// Botões Imagens, Downloads e Mostrar área de trabalho.
+// Imagens, Downloads e Mostrar área de trabalho — três itens independentes.
 //
-// "Mostrar área de trabalho" usa o desktop.js, o mesmo do canto inferior
-// esquerdo: o segundo clique devolve as janelas, venha ele daqui ou do canto.
+// "Mostrar área de trabalho" usa o desktop.js, o mesmo dos cantos da tela: o
+// segundo acionamento devolve as janelas, venha ele daqui ou de um canto.
 
-import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
-import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {hasHidden, toggleDesktop} from './desktop.js';
+import {PanelItem, iconButton} from './item.js';
 
 function openDir(dir) {
     if (!dir)
@@ -24,32 +21,40 @@ function openDir(dir) {
     }
 }
 
-export const PlacesButton = GObject.registerClass(
-class PlacesButton extends PanelMenu.Button {
-    _init(tooltip) {
-        super._init(0.0, 'Zorin Flow: atalhos', true);
-        this.add_style_class_name('zf-places-button');
+class SimpleItem extends PanelItem {
+    constructor(tooltip, icon, label, action) {
+        super();
+        const btn = iconButton(icon, action);
+        tooltip.attach(btn, typeof label === 'function' ? label : () => label);
+        this.actor.add_child(btn);
+    }
+}
 
-        const box = new St.BoxLayout({style_class: 'zf-places', y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(box);
-
-        const add = (icon, label, action) => {
-            const btn = new St.Button({
-                style_class: 'zf-icon-button',
-                y_align: Clutter.ActorAlign.CENTER,
-                child: new St.Icon({icon_name: icon, style_class: 'system-status-icon'}),
-            });
-            btn.connect('clicked', action);
-            tooltip.attach(btn, typeof label === 'function' ? label : () => label);
-            box.add_child(btn);
-        };
-
-        add('folder-pictures-symbolic', 'Imagens',
+export class PicturesItem extends SimpleItem {
+    constructor(tooltip) {
+        super(tooltip, 'folder-pictures-symbolic', 'Imagens',
             () => openDir(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)));
-        add('folder-download-symbolic', 'Downloads',
+    }
+}
+
+export class DownloadsItem extends SimpleItem {
+    constructor(tooltip) {
+        super(tooltip, 'folder-download-symbolic', 'Downloads',
             () => openDir(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)));
-        add('user-desktop-symbolic',
+    }
+}
+
+export class DesktopItem extends SimpleItem {
+    constructor(tooltip) {
+        super(tooltip, 'user-desktop-symbolic',
             () => hasHidden() ? 'Restaurar janelas' : 'Mostrar área de trabalho',
             () => toggleDesktop());
     }
-});
+}
+
+// Engrenagem: abre as configurações do Zorin Flow.
+export class SettingsItem extends SimpleItem {
+    constructor(tooltip, openPreferences) {
+        super(tooltip, 'emblem-system-symbolic', 'Configurações do Zorin Flow', () => openPreferences());
+    }
+}

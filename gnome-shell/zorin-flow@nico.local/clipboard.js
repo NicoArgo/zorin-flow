@@ -8,14 +8,14 @@
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+
+import {MenuPanelItem} from './item.js';
 
 const MAX_TEXT = 100000;
 
@@ -33,14 +33,13 @@ function preview(text) {
     return line.length > 70 ? `${line.slice(0, 69)}…` : line;
 }
 
-export const ClipboardButton = GObject.registerClass(
-class ClipboardButton extends PanelMenu.Button {
-    _init(settings) {
-        super._init(0.5, 'Zorin Flow: área de transferência');
+export class ClipboardItem extends MenuPanelItem {
+    constructor(settings) {
+        super('Área de transferência');
         this._settings = settings;
         this._clipboard = St.Clipboard.get_default();
 
-        this.add_child(new St.Icon({icon_name: 'edit-paste-symbolic', style_class: 'system-status-icon'}));
+        this.button.set_child(new St.Icon({icon_name: 'edit-paste-symbolic', style_class: 'system-status-icon'}));
         this.menu.actor.add_style_class_name('zf-clip-menu');
 
         this._entry = new St.Entry({
@@ -108,7 +107,6 @@ class ClipboardButton extends PanelMenu.Button {
             Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
             () => this.menu.toggle());
 
-        this.connect('destroy', () => this._onDestroy());
     }
 
     _onClipboardChanged(source) {
@@ -187,4 +185,4 @@ class ClipboardButton extends PanelMenu.Button {
         this._vkbd?.run_dispose();
         this._vkbd = null;
     }
-});
+}

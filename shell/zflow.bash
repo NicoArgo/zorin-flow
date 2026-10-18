@@ -98,6 +98,11 @@ _zf_prompt() {
     return $rc
 }
 
+# `regra` abre o diálogo "Regra da pasta" para a pasta atual (ou a indicada).
+regra() {
+    (command zflow-rule edit "${1:-.}" >/dev/null 2>&1 &)
+}
+
 _zf_exit() {
     command rm -f "$_zf_presence" "$_zf_presence.tmp" "$_zf_stamp" 2>/dev/null
     printf '\e]112\a'

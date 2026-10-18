@@ -6,14 +6,14 @@
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
-import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+
+import {MenuPanelItem} from './item.js';
 
 const TILING_SCHEMA = 'org.gnome.shell.extensions.zorin-tiling-shell';
 const THUMB_W = 46;
@@ -33,15 +33,14 @@ export function tilingAvailable() {
     return Gio.SettingsSchemaSource.get_default().lookup(TILING_SCHEMA, true) !== null;
 }
 
-export const TilingButton = GObject.registerClass(
-class TilingButton extends PanelMenu.Button {
-    _init(settings) {
-        super._init(0.5, 'Zorin Flow: tiling');
+export class TilingItem extends MenuPanelItem {
+    constructor(settings) {
+        super('Tiling automático');
         this._settings = settings;
         this._tiling = new Gio.Settings({schema_id: TILING_SCHEMA});
 
         this._icon = new St.Icon({icon_name: 'view-grid-symbolic', style_class: 'system-status-icon'});
-        this.add_child(this._icon);
+        this.button.set_child(this._icon);
 
         this._switch = new PopupMenu.PopupSwitchMenuItem('Tiling automático', false);
         this._switch.connect('toggled', (_i, state) => this._tiling.set_boolean('enable-autotiling', state));
@@ -63,7 +62,6 @@ class TilingButton extends PanelMenu.Button {
         Main.wm.addKeybinding('tiling-shortcut', settings, Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL, () => this._toggle());
 
-        this.connect('destroy', () => this._onDestroy());
         this._sync();
     }
 
@@ -156,4 +154,4 @@ class TilingButton extends PanelMenu.Button {
             this._tiling.disconnect(id);
         this._tiling = null;
     }
-});
+}

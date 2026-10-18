@@ -1,5 +1,4 @@
-.zf-terminals,
-.zf-places {
+.zf-group {
     spacing: 2px;
 }
 
@@ -94,4 +93,30 @@
 
 .zf-tiling-thumb {
     margin-right: 10px;
+}
+
+.zf-badge {
+    background-color: rgba(30, 30, 34, 0.88);
+    color: #ffffff;
+    border-radius: 99px;
+    padding: 4px 10px;
+    font-size: 0.85em;
+}
+
+.zf-badge:hover {
+    background-color: rgba(50, 50, 56, 0.95);
+}
+
+.zf-badge-box {
+    spacing: 6px;
+}
+
+.zf-badge-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 99px;
+}
+
+.zf-badge-dot-empty {
+    border: 1px solid rgba(255, 255, 255, 0.7);
 }

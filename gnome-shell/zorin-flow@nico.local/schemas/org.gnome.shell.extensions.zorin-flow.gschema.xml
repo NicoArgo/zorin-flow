@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="org.gnome.shell.extensions.zorin-flow" path="/org/gnome/shell/extensions/zorin-flow/">
+    <key name="panel-layout" type="s">
+      <default>''</default>
+      <summary>Grupos de itens por lado do painel (JSON); vazio = padrão</summary>
+    </key>
+    <key name="panel-hidden" type="as">
+      <default><![CDATA[[]]]></default>
+      <summary>Itens escondidos do painel</summary>
+    </key>
     <key name="panel-left" type="as">
       <default><![CDATA[['terminals', 'places', 'tiling', 'settings']]]></default>
-      <summary>Applets à esquerda do painel, na ordem</summary>
+      <summary>(antigo) Applets à esquerda do painel; migrado para panel-layout</summary>
     </key>
     <key name="panel-center" type="as">
       <default><![CDATA[[]]]></default>
@@ -24,6 +32,10 @@
     <key name="terminal-borders" type="b">
       <default>true</default>
       <summary>Contorno na cor da pasta em volta das janelas do terminal</summary>
+    </key>
+    <key name="terminal-rule-button" type="b">
+      <default>true</default>
+      <summary>Botão "Regra da pasta" no canto do terminal em foco</summary>
     </key>
     <key name="terminal-border-width" type="i">
       <range min="1" max="12"/>

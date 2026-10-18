@@ -7,11 +7,11 @@
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+
+import {MenuPanelItem} from './item.js';
 
 const INHIBIT_SUSPEND = 4;
 
@@ -54,16 +54,15 @@ function formatLeft(secs) {
     return h ? `${h} h ${m} min` : `${m} min`;
 }
 
-export const VampireButton = GObject.registerClass(
-class VampireButton extends PanelMenu.Button {
-    _init(settings) {
-        super._init(0.5, 'Zorin Flow: modo vampiro');
+export class VampireItem extends MenuPanelItem {
+    constructor(settings) {
+        super('Modo vampiro');
         this._settings = settings;
         this._cookie = null;
         this._inhibiting = false;
 
         this._icon = new St.Icon({icon_name: 'weather-clear-night-symbolic', style_class: 'system-status-icon'});
-        this.add_child(this._icon);
+        this.button.set_child(this._icon);
 
         this._status = new PopupMenu.PopupMenuItem('', {reactive: false});
         this.menu.addMenuItem(this._status);
@@ -102,7 +101,6 @@ class VampireButton extends PanelMenu.Button {
         });
         this._settingsId = settings.connect('changed::vampire-until', () => this._sync());
 
-        this.connect('destroy', () => this._onDestroy());
         this._sync();
     }
 
@@ -177,4 +175,4 @@ class VampireButton extends PanelMenu.Button {
             this._upower.disconnect(this._lidId);
         this._inhibit(false);
     }
-});
+}

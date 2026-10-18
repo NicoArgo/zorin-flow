@@ -8,21 +8,14 @@ import {panelEditorGroup} from './prefsPanel.js';
 const SWITCHES = [
     ['Terminal', [
         ['terminal-borders', 'Contorno na cor da pasta', 'Borda colorida em volta da janela do terminal quando a pasta tem regra'],
+        ['terminal-rule-button', 'Botão "Regra da pasta" no terminal', 'No canto do terminal em foco: mostra a regra da pasta e abre o diálogo para criar ou mudar'],
     ]],
     ['Janelas', [
         ['alttab-close', 'Fechar pelo Alt+Tab', 'X na miniatura selecionada ou sob o mouse; clique do meio também fecha'],
-        ['show-tiling', 'Botão de tiling automático', 'Liga/desliga o auto-tiling do Zorin e escolhe o layout (Super+Y)'],
         ['desktop-corner', 'Canto inferior esquerdo → área de trabalho', 'Clicar na quina mostra a área de trabalho; clicar de novo devolve as janelas'],
         ['desktop-corner-right', 'Canto inferior direito → área de trabalho', 'Basta encostar o mouse na quina; encostar de novo devolve as janelas'],
     ]],
-    ['Painel', [
-        ['show-terminals', 'Applet de terminais', 'Botão de novo terminal e uma bolinha por janela, na cor da pasta'],
-        ['show-places', 'Imagens, Downloads e Área de trabalho', 'Atalhos no painel'],
-        ['show-vampire', 'Modo vampiro', 'O PC só dorme quando você manda (1 h, 3 h ou até desligar)'],
-        ['show-settings', 'Botão de configurações', 'Engrenagem no painel que abre esta janela'],
-    ]],
     ['Área de transferência', [
-        ['clipboard-enabled', 'Histórico (Super+V)', 'Só texto, só na memória; senhas marcadas são ignoradas'],
         ['clipboard-paste-on-select', 'Colar ao escolher', 'Como o Win+V: escolher um item já cola na janela'],
     ]],
     ['Tema', [
@@ -34,9 +27,12 @@ export default class ZorinFlowPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         const page = new Adw.PreferencesPage();
+        page.add(panelEditorGroup(settings));
 
         for (const [title, rows] of SWITCHES) {
             const group = new Adw.PreferencesGroup({title});
+            if (title === 'Área de transferência')
+                group.description = 'O histórico (Super+V) funciona enquanto o item Transfer. estiver visível no painel. Só texto, só na memória; senhas marcadas são ignoradas.';
             for (const [key, rowTitle, subtitle] of rows) {
                 const row = new Adw.SwitchRow({title: rowTitle, subtitle});
                 settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -72,8 +68,6 @@ export default class ZorinFlowPrefs extends ExtensionPreferences {
                 group.add(size);
             }
             page.add(group);
-            if (title === 'Painel')
-                page.add(panelEditorGroup(settings));
         }
 
         const rules = new Adw.PreferencesGroup({
