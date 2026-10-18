@@ -40,7 +40,7 @@ export default class ZorinFlowExtension extends Extension {
             ['show-vampire', 'vampire', 0, 'right', () => new VampireButton(this._settings)],
         ];
         if (tilingAvailable())
-            this._parts.push(['show-tiling', 'tiling', 0, 'right', () => new TilingButton(this._settings)]);
+            this._parts.push(['show-tiling', 'tiling', 2, 'left', () => new TilingButton(this._settings)]);
         this._settingsIds = [...this._parts.map(([key]) => key), 'terminal-borders', 'alttab-close', 'desktop-corner', 'desktop-corner-right'].map(key =>
             this._settings.connect(`changed::${key}`, () => this._sync()));
         this._sync();
