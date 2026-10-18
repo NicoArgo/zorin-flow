@@ -82,3 +82,12 @@
 .zf-alttab-close:hover {
     background-color: #e01b24;
 }
+
+.zf-tiling-on {
+    color: #62a0ea;
+}
+
+.zf-tiling-hint {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.6);
+}

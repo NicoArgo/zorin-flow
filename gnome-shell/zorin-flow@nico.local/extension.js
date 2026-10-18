@@ -6,6 +6,7 @@
 //   alttab.js     X para fechar janelas no Alt+Tab
 //   corner.js     cantos inferiores → área de trabalho (clique / encostar)
 //   places.js     Imagens / Downloads / Mostrar área de trabalho
+//   tiling.js     botão de tiling automático (Zorin Tiling Shell), Super+Y
 //   vampire.js    modo vampiro
 //   clipboard.js  histórico da área de transferência (Super+V)
 //   wallsync.js   cor de destaque segue o papel de parede
@@ -20,6 +21,7 @@ import {forgetHidden} from './desktop.js';
 import {ClipboardButton} from './clipboard.js';
 import {PlacesButton} from './places.js';
 import {TerminalsButton} from './terminals.js';
+import {TilingButton, tilingAvailable} from './tiling.js';
 import {Tooltip} from './tooltip.js';
 import {VampireButton} from './vampire.js';
 import {WallSync} from './wallsync.js';
@@ -37,6 +39,8 @@ export default class ZorinFlowExtension extends Extension {
             ['clipboard-enabled', 'clipboard', 0, 'right', () => new ClipboardButton(this._settings)],
             ['show-vampire', 'vampire', 0, 'right', () => new VampireButton(this._settings)],
         ];
+        if (tilingAvailable())
+            this._parts.push(['show-tiling', 'tiling', 0, 'right', () => new TilingButton(this._settings)]);
         this._settingsIds = [...this._parts.map(([key]) => key), 'terminal-borders', 'alttab-close', 'desktop-corner', 'desktop-corner-right'].map(key =>
             this._settings.connect(`changed::${key}`, () => this._sync()));
         this._sync();

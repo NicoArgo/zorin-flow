@@ -43,6 +43,9 @@ if [[ -f $CONFIG/backup-toggle-message-tray ]]; then
     rm -f "$CONFIG/backup-toggle-message-tray"
 fi
 
+say "Atalhos de tiling de volta"
+"$ROOT/bin/zflow-tiling-keys" restore || true
+
 say "Arquivos (Nautilus)"
 unlink_ours "$HOME/.local/share/nautilus-python/extensions/zorin_flow.py"
 
@@ -56,6 +59,7 @@ fi
 say "Comandos"
 unlink_ours "$HOME/.local/bin/zflow-rule"
 unlink_ours "$HOME/.local/bin/zflow-wallsync"
+unlink_ours "$HOME/.local/bin/zflow-tiling-keys"
 
 rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/zorin-flow" "${XDG_DATA_HOME:-$HOME/.local/share}/zorin-flow"
 if [[ ${1-} == --purge ]]; then

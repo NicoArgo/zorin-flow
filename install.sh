@@ -38,10 +38,11 @@ link() { # link ORIGEM DESTINO — não pisa num arquivo de verdade que já exis
     ln -sfn "$src" "$dst"
 }
 
-say "Comandos zflow-rule e zflow-wallsync em ~/.local/bin"
+say "Comandos zflow-* em ~/.local/bin"
 chmod +x "$ROOT"/bin/*
 link "$ROOT/bin/zflow-rule" "$HOME/.local/bin/zflow-rule"
 link "$ROOT/bin/zflow-wallsync" "$HOME/.local/bin/zflow-wallsync"
+link "$ROOT/bin/zflow-tiling-keys" "$HOME/.local/bin/zflow-tiling-keys"
 
 say "Regras por pasta (~/.config/zorin-flow/dir_rules.json)"
 "$ROOT/bin/zflow-rule" sync
@@ -93,6 +94,13 @@ s.set_strv("toggle-message-tray", [k for k in s.get_strv("toggle-message-tray") 
 Gio.Settings.sync()
 EOF
     echo "   Super+V liberado (notificações continuam no Super+M)"
+fi
+
+say "Tiling: atalhos do Pop (Super+setas foco, Super+Shift+setas move)"
+if gsettings list-schemas | grep -qx org.gnome.shell.extensions.zorin-tiling-shell; then
+    "$ROOT/bin/zflow-tiling-keys" apply
+else
+    echo "   Zorin Tiling Shell não encontrado; pulando"
 fi
 
 cat <<EOF

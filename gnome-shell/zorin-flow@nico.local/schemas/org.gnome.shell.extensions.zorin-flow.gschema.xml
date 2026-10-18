@@ -36,6 +36,14 @@
       <default>8</default>
       <summary>Tamanho da área do canto (px)</summary>
     </key>
+    <key name="show-tiling" type="b">
+      <default>true</default>
+      <summary>Botão de tiling automático no painel</summary>
+    </key>
+    <key name="tiling-shortcut" type="as">
+      <default><![CDATA[['<Super>y']]]></default>
+      <summary>Atalho para ligar/desligar o tiling automático</summary>
+    </key>
     <key name="show-places" type="b">
       <default>true</default>
       <summary>Botões Imagens, Downloads e Mostrar área de trabalho</summary>

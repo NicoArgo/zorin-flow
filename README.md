@@ -18,6 +18,7 @@ auto-reapply via APT: update do sistema não desfaz nada.
 | **Contorno colorido** em volta da janela do terminal, na cor da pasta (mais fraco sem foco) | — (novo) | `borders.js` |
 | **Fechar pelo Alt+Tab**: X na miniatura selecionada/sob o mouse, clique do meio fecha | X do Alt+Tab do cosmic-launcher | `alttab.js` |
 | **Cantos inferiores → área de trabalho**: clicar na quina esquerda ou encostar o mouse na direita mostra a área de trabalho daquela tela; de novo, devolve | triângulo do canto (cosmic-applets) | `corner.js`, `desktop.js` |
+| **Tiling automático** como o do Pop: botão no painel (liga/desliga, escolhe o layout), Super+Y, Super+setas foco, Super+Shift+setas move — usa o Zorin Tiling Shell | auto-tiling do Pop!_OS | `tiling.js`, `bin/zflow-tiling-keys` |
 | **Applet de terminais** `[>_] ● ● ●`: uma bolinha por janela, na cor da pasta, posição fixa, clique traz a janela | cosmic-applet-terminals | `terminals.js` |
 | **Imagens / Downloads / Mostrar área de trabalho** no painel | botões do cosmic-applets | `places.js` |
 | **Modo vampiro**: o PC só dorme quando você manda (1 h, 3 h, até desligar) | cosmic-applets | `vampire.js` |
