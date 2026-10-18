@@ -17,6 +17,7 @@ auto-reapply via APT: update do sistema não desfaz nada.
 | **Pastas na cor da regra** no Arquivos e na área de trabalho, **Regra da pasta…** e **Copiar caminho** no botão direito | cosmic-files | `nautilus/zorin_flow.py` |
 | **Contorno colorido** em volta da janela do terminal, na cor da pasta (mais fraco sem foco) | — (novo) | `borders.js` |
 | **Fechar pelo Alt+Tab**: X na miniatura selecionada/sob o mouse, clique do meio fecha | X do Alt+Tab do cosmic-launcher | `alttab.js` |
+| **Canto inferior esquerdo → área de trabalho**: clicar na quina mostra a área de trabalho daquela tela; de novo, devolve | triângulo do canto (cosmic-applets) | `corner.js`, `desktop.js` |
 | **Applet de terminais** `[>_] ● ● ●`: uma bolinha por janela, na cor da pasta, posição fixa, clique traz a janela | cosmic-applet-terminals | `terminals.js` |
 | **Imagens / Downloads / Mostrar área de trabalho** no painel | botões do cosmic-applets | `places.js` |
 | **Modo vampiro**: o PC só dorme quando você manda (1 h, 3 h, até desligar) | cosmic-applets | `vampire.js` |

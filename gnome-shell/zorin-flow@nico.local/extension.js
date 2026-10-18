@@ -4,6 +4,7 @@
 //   terminals.js  applet de terminais na cor da pasta
 //   borders.js    contorno na cor da pasta em volta das janelas do terminal
 //   alttab.js     X para fechar janelas no Alt+Tab
+//   corner.js     canto inferior esquerdo → área de trabalho
 //   places.js     Imagens / Downloads / Mostrar área de trabalho
 //   vampire.js    modo vampiro
 //   clipboard.js  histórico da área de transferência (Super+V)
@@ -14,6 +15,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {AltTabClose} from './alttab.js';
 import {TerminalBorders} from './borders.js';
+import {DesktopCorner} from './corner.js';
+import {forgetHidden} from './desktop.js';
 import {ClipboardButton} from './clipboard.js';
 import {PlacesButton} from './places.js';
 import {TerminalsButton} from './terminals.js';
@@ -34,7 +37,7 @@ export default class ZorinFlowExtension extends Extension {
             ['clipboard-enabled', 'clipboard', 0, 'right', () => new ClipboardButton(this._settings)],
             ['show-vampire', 'vampire', 0, 'right', () => new VampireButton(this._settings)],
         ];
-        this._settingsIds = [...this._parts.map(([key]) => key), 'terminal-borders', 'alttab-close'].map(key =>
+        this._settingsIds = [...this._parts.map(([key]) => key), 'terminal-borders', 'alttab-close', 'desktop-corner'].map(key =>
             this._settings.connect(`changed::${key}`, () => this._sync()));
         this._sync();
 
@@ -70,6 +73,14 @@ export default class ZorinFlowExtension extends Extension {
             this._alttab.destroy();
             this._alttab = null;
         }
+
+        const corner = this._settings.get_boolean('desktop-corner');
+        if (corner && !this._corner) {
+            this._corner = new DesktopCorner(this._settings);
+        } else if (!corner && this._corner) {
+            this._corner.destroy();
+            this._corner = null;
+        }
     }
 
     disable() {
@@ -82,6 +93,9 @@ export default class ZorinFlowExtension extends Extension {
         this._borders = null;
         this._alttab?.destroy();
         this._alttab = null;
+        this._corner?.destroy();
+        this._corner = null;
+        forgetHidden();
         this._wallsync.destroy();
         this._tooltip.destroy();
         this._wallsync = null;

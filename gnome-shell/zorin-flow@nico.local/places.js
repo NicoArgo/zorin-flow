@@ -1,17 +1,17 @@
 // Botões Imagens, Downloads e Mostrar área de trabalho.
 //
-// "Mostrar área de trabalho" minimiza as janelas da área de trabalho atual e,
-// no segundo clique, devolve exatamente as que ele minimizou (o Super+D do
-// sistema continua funcionando como sempre).
+// "Mostrar área de trabalho" usa o desktop.js, o mesmo do canto inferior
+// esquerdo: o segundo clique devolve as janelas, venha ele daqui ou do canto.
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import Meta from 'gi://Meta';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+
+import {hasHidden, toggleDesktop} from './desktop.js';
 
 function openDir(dir) {
     if (!dir)
@@ -29,7 +29,6 @@ class PlacesButton extends PanelMenu.Button {
     _init(tooltip) {
         super._init(0.0, 'Zorin Flow: atalhos', true);
         this.add_style_class_name('zf-places-button');
-        this._hidden = [];
 
         const box = new St.BoxLayout({style_class: 'zf-places', y_align: Clutter.ActorAlign.CENTER});
         this.add_child(box);
@@ -50,31 +49,7 @@ class PlacesButton extends PanelMenu.Button {
         add('folder-download-symbolic', 'Downloads',
             () => openDir(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)));
         add('user-desktop-symbolic',
-            () => this._hidden.length ? 'Restaurar janelas' : 'Mostrar área de trabalho',
-            () => this._toggleDesktop());
-    }
-
-    _toggleDesktop() {
-        const ws = global.workspace_manager.get_active_workspace();
-        const visible = ws.list_windows().filter(w =>
-            !w.minimized &&
-            w.get_window_type() === Meta.WindowType.NORMAL &&
-            !w.is_skip_taskbar() &&
-            !w.is_on_all_workspaces());
-
-        if (visible.length) {
-            // Mais ao fundo primeiro, para devolver na mesma ordem de empilhamento.
-            this._hidden = global.display.sort_windows_by_stacking(visible);
-            for (const w of this._hidden)
-                w.minimize();
-            return;
-        }
-
-        const toRestore = this._hidden.filter(w => w.get_workspace?.() === ws && w.minimized);
-        this._hidden = [];
-        for (const w of toRestore)
-            w.unminimize();
-        if (toRestore.length)
-            Main.activateWindow(toRestore[toRestore.length - 1]);
+            () => hasHidden() ? 'Restaurar janelas' : 'Mostrar área de trabalho',
+            () => toggleDesktop());
     }
 });

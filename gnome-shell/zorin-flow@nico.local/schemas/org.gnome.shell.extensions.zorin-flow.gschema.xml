@@ -23,6 +23,15 @@
       <default>true</default>
       <summary>Botão X para fechar janelas no Alt+Tab</summary>
     </key>
+    <key name="desktop-corner" type="b">
+      <default>true</default>
+      <summary>Clicar no canto inferior esquerdo mostra a área de trabalho</summary>
+    </key>
+    <key name="desktop-corner-size" type="i">
+      <range min="2" max="40"/>
+      <default>8</default>
+      <summary>Tamanho da área do canto (px)</summary>
+    </key>
     <key name="show-places" type="b">
       <default>true</default>
       <summary>Botões Imagens, Downloads e Mostrar área de trabalho</summary>
