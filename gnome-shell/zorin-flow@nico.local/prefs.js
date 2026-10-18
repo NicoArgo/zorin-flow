@@ -7,6 +7,9 @@ const SWITCHES = [
     ['Terminal', [
         ['terminal-borders', 'Contorno na cor da pasta', 'Borda colorida em volta da janela do terminal quando a pasta tem regra'],
     ]],
+    ['Janelas', [
+        ['alttab-close', 'Fechar pelo Alt+Tab', 'X na miniatura selecionada ou sob o mouse; clique do meio também fecha'],
+    ]],
     ['Painel', [
         ['show-terminals', 'Applet de terminais', 'Botão de novo terminal e uma bolinha por janela, na cor da pasta'],
         ['show-places', 'Imagens, Downloads e Área de trabalho', 'Atalhos no painel'],

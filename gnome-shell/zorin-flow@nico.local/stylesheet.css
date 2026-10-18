@@ -70,3 +70,15 @@
 .zf-clip-scroll {
     max-height: 420px;
 }
+
+.zf-alttab-close {
+    background-color: rgba(30, 30, 34, 0.85);
+    color: #ffffff;
+    border-radius: 99px;
+    padding: 5px;
+    margin: 4px;
+}
+
+.zf-alttab-close:hover {
+    background-color: #e01b24;
+}

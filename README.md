@@ -16,6 +16,7 @@ auto-reapply via APT: update do sistema não desfaz nada.
 | **Terminal na cor da pasta**: título da aba = nome da regra, cursor na cor, `● Nome` colorido no prompt; muda ao vivo no `cd` | cosmic-term T2 | `shell/zflow.bash` |
 | **Pastas na cor da regra** no Arquivos e na área de trabalho, **Regra da pasta…** e **Copiar caminho** no botão direito | cosmic-files | `nautilus/zorin_flow.py` |
 | **Contorno colorido** em volta da janela do terminal, na cor da pasta (mais fraco sem foco) | — (novo) | `borders.js` |
+| **Fechar pelo Alt+Tab**: X na miniatura selecionada/sob o mouse, clique do meio fecha | X do Alt+Tab do cosmic-launcher | `alttab.js` |
 | **Applet de terminais** `[>_] ● ● ●`: uma bolinha por janela, na cor da pasta, posição fixa, clique traz a janela | cosmic-applet-terminals | `terminals.js` |
 | **Imagens / Downloads / Mostrar área de trabalho** no painel | botões do cosmic-applets | `places.js` |
 | **Modo vampiro**: o PC só dorme quando você manda (1 h, 3 h, até desligar) | cosmic-applets | `vampire.js` |
@@ -23,8 +24,8 @@ auto-reapply via APT: update do sistema não desfaz nada.
 | **Destaque segue o papel de parede** (acento do Zorin mais próximo) | cosmic-wallsync | `wallsync.js`, `bin/zflow-wallsync` |
 
 Ficaram de fora: gestos de três dedos (o Zorin já tem o Touchégg), "Abrir no
-terminal" (o Arquivos já tem), Super+D (já existe) e o Alt+Tab com miniaturas
-(o alternador de janelas do GNOME já mostra prévias).
+terminal" (o Arquivos já tem), Super+D (já existe) e a grade de miniaturas do Alt+Tab (o alternador de
+janelas do GNOME já mostra prévias).
 
 ## Instalar / desinstalar
 

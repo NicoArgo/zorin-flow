@@ -19,6 +19,10 @@
       <default>12</default>
       <summary>Arredondamento dos cantos da janela (px)</summary>
     </key>
+    <key name="alttab-close" type="b">
+      <default>true</default>
+      <summary>Botão X para fechar janelas no Alt+Tab</summary>
+    </key>
     <key name="show-places" type="b">
       <default>true</default>
       <summary>Botões Imagens, Downloads e Mostrar área de trabalho</summary>
