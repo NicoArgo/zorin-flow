@@ -26,6 +26,7 @@ const SWITCHES = [
 export default class ZorinFlowPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
+        window.set_default_size(820, 760);
         const page = new Adw.PreferencesPage();
         page.add(panelEditorGroup(settings));
 

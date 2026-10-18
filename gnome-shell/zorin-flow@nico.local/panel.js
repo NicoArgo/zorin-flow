@@ -20,12 +20,12 @@ import {BOX_ELEMENTS, BOX_PANEL_NAME, isExternal, readBoxes, readHidden} from '.
 
 const OWN_PREFIX = 'zorin-flow-';
 
-// Nomes melhores para itens conhecidos de outras extensões.
-const FOREIGN_TITLES = {
-    'drive-menu': 'Dispositivos removíveis (HD, pendrive)',
-    'keyboard': 'Idioma do teclado',
-    'a11y': 'Acessibilidade',
-    'printers': 'Impressoras',
+// Nomes melhores para itens conhecidos de outras extensões: [título, curto].
+const FOREIGN_NAMES = {
+    'drive-menu': ['Dispositivos removíveis (HD, pendrive)', 'HD/pendrive'],
+    'keyboard': ['Idioma do teclado', 'Teclado'],
+    'a11y': ['Acessibilidade', 'Acessib.'],
+    'printers': ['Impressoras', 'Impressoras'],
 };
 
 function panelBox(box) {
@@ -179,8 +179,8 @@ export class PanelLayout {
             let iconName = icon?.gicon?.to_string?.() ?? icon?.icon_name ?? null;
             if (iconName && /^\. GThemedIcon /.test(iconName))
                 iconName = iconName.split(' ')[2] ?? null;
-            const title = FOREIGN_TITLES[role] ?? indicator.accessible_name ?? role;
-            list.push({role, title: String(title || role), icon: iconName, box});
+            const [title, short] = FOREIGN_NAMES[role] ?? [indicator.accessible_name || role, null];
+            list.push({role, title: String(title), ...(short ? {short} : {}), icon: iconName, box});
         }
         list.sort((a, b) => a.role.localeCompare(b.role));
         const json = JSON.stringify(list);

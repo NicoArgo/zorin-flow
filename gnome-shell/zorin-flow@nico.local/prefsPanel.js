@@ -9,7 +9,9 @@
 //   - um item para dentro de uma moldura de itens → entra naquele grupo
 //   - qualquer peça para o espaço entre molduras  → vai para ali
 // Clicar numa peça abre: separar/juntar (itens), lado e mostrar/esconder.
-// O que está escondido aparece apagado no lugar onde voltaria.
+// Só o que está ativo aparece na barra; o resto fica em "Escondidos", logo
+// abaixo: arraste de lá para o painel (ou clique) para mostrar, e arraste da
+// barra para lá para esconder.
 
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
@@ -28,14 +30,13 @@ const CSS = `
 }
 .zf-zone {
     border-radius: 9px;
-    padding: 4px;
-    min-height: 74px;
+    padding: 4px 6px;
+    min-height: 60px;
     border: 2px dashed transparent;
 }
 .zf-zone-title {
-    font-size: 0.8em;
+    font-size: 0.85em;
     opacity: 0.6;
-    margin-bottom: 4px;
 }
 .zf-zone-hover {
     border-color: alpha(@accent_color, 0.5);
@@ -68,11 +69,23 @@ const CSS = `
 .zf-chip-label {
     font-size: 0.75em;
 }
-.zf-chip-off {
-    opacity: 0.35;
-}
 .zf-chip-dragging {
     opacity: 0.2;
+}
+.zf-hidden-area {
+    border-radius: 10px;
+    padding: 6px;
+    min-height: 48px;
+    border: 2px dashed alpha(@window_fg_color, 0.15);
+}
+.zf-hidden-area > flowboxchild {
+    padding: 0;
+    background: none;
+    outline: none;
+}
+.zf-hidden-hover {
+    border-color: @accent_color;
+    background-color: alpha(@accent_color, 0.08);
 }
 .zf-drop-before {
     box-shadow: -9px 0 0 -4px @accent_color;
@@ -94,7 +107,7 @@ function stringValue(text) {
 
 function bounds(widget, relativeTo) {
     const [ok, rect] = widget.compute_bounds(relativeTo);
-    return ok ? {x: rect.get_x(), w: rect.get_width()} : null;
+    return ok ? {x: rect.get_x(), y: rect.get_y(), w: rect.get_width(), h: rect.get_height()} : null;
 }
 
 function indexAmong(widgets, relativeTo, x) {
@@ -110,6 +123,100 @@ function lookupSchema(id) {
     const schema = Gio.SettingsSchemaSource.get_default().lookup(id, true);
     return schema ? new Gio.Settings({settings_schema: schema}) : null;
 }
+
+// Fileira que quebra linha: peças lado a lado, da esquerda para a direita,
+// passando para a linha de baixo quando não cabem (sem alinhar em colunas,
+// como faria o Gtk.FlowBox).
+const WrapLayout = GObject.registerClass(
+class WrapLayout extends Gtk.LayoutManager {
+    _init(params = {}) {
+        super._init();
+        this.hSpacing = params.hSpacing ?? 12;
+        this.vSpacing = params.vSpacing ?? 8;
+    }
+
+    *_children(widget) {
+        for (let c = widget.get_first_child(); c; c = c.get_next_sibling()) {
+            if (c.should_layout())
+                yield c;
+        }
+    }
+
+    _lines(widget, width) {
+        const lines = [];
+        let line = {items: [], w: 0, h: 0};
+        for (const c of this._children(widget)) {
+            const [, w] = c.measure(Gtk.Orientation.HORIZONTAL, -1);
+            const [, h] = c.measure(Gtk.Orientation.VERTICAL, w);
+            const needed = line.items.length ? line.w + this.hSpacing + w : w;
+            if (line.items.length && width >= 0 && needed > width) {
+                lines.push(line);
+                line = {items: [], w: 0, h: 0};
+            }
+            line.w = line.items.length ? line.w + this.hSpacing + w : w;
+            line.h = Math.max(line.h, h);
+            line.items.push([c, w, h]);
+        }
+        if (line.items.length)
+            lines.push(line);
+        return lines;
+    }
+
+    vfunc_get_request_mode() {
+        return Gtk.SizeRequestMode.HEIGHT_FOR_WIDTH;
+    }
+
+    vfunc_measure(widget, orientation, forSize) {
+        if (orientation === Gtk.Orientation.HORIZONTAL) {
+            let min = 0, nat = 0, n = 0;
+            for (const c of this._children(widget)) {
+                const [cmin, cnat] = c.measure(orientation, -1);
+                min = Math.max(min, cmin);
+                nat += cnat + (n++ ? this.hSpacing : 0);
+            }
+            return [min, nat, -1, -1];
+        }
+        const lines = this._lines(widget, forSize);
+        const h = lines.reduce((sum, l, i) => sum + l.h + (i ? this.vSpacing : 0), 0);
+        return [h, h, -1, -1];
+    }
+
+    vfunc_allocate(widget, width, _height, _baseline) {
+        let y = 0;
+        for (const line of this._lines(widget, width)) {
+            let x = 0;
+            for (const [c, w, h] of line.items) {
+                const rect = new Gdk.Rectangle({x, y: y + Math.floor((line.h - h) / 2), width: w, height: h});
+                c.size_allocate(rect, -1);
+                x += w + this.hSpacing;
+            }
+            y += line.h + this.vSpacing;
+        }
+    }
+});
+
+const WrapBox = GObject.registerClass(
+class WrapBox extends Gtk.Widget {
+    _init(params = {}) {
+        super._init(params);
+        this.set_layout_manager(new WrapLayout());
+    }
+
+    append(child) {
+        child.set_parent(this);
+    }
+
+    remove(child) {
+        child.unparent();
+    }
+
+    vfunc_dispose() {
+        let c;
+        while ((c = this.get_first_child()))
+            c.unparent();
+        super.vfunc_dispose();
+    }
+});
 
 // "item:clipboard" → ['item', 'clipboard']; "item:ext:drive-menu" → ['item', 'ext:drive-menu']
 function splitPayload(payload) {
@@ -132,14 +239,28 @@ export function panelEditorGroup(settings) {
             'Clique numa peça para mais opções.',
     });
 
-    const bar = new Gtk.Box({spacing: 6, css_classes: ['zf-panel-bar']});
-    const scroller = new Gtk.ScrolledWindow({
-        hscrollbar_policy: Gtk.PolicyType.AUTOMATIC,
-        vscrollbar_policy: Gtk.PolicyType.NEVER,
-        propagate_natural_height: true,
-        child: bar,
+    // Um lado por linha (Esquerda, Centro, Direita), para tudo caber sem
+    // esconder lados fora da tela.
+    const bar = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 4, css_classes: ['zf-panel-bar']});
+    group.add(bar);
+
+    const hiddenTitle = new Gtk.Label({
+        label: 'Escondidos — arraste para o painel ou clique para mostrar; arraste peças da barra para cá para esconder',
+        css_classes: ['caption-heading'],
+        xalign: 0,
+        wrap: true,
+        margin_top: 12,
+        margin_bottom: 4,
     });
-    group.add(scroller);
+    group.add(hiddenTitle);
+    const hiddenArea = new Gtk.FlowBox({
+        selection_mode: Gtk.SelectionMode.NONE,
+        column_spacing: 6,
+        row_spacing: 6,
+        max_children_per_line: 20,
+        css_classes: ['zf-hidden-area'],
+    });
+    group.add(hiddenArea);
 
     group.add(new Gtk.Label({
         label: 'Moldura pontilhada: sistema · tracejada: outra extensão · lisa: Zorin Flow',
@@ -154,6 +275,7 @@ export function panelEditorGroup(settings) {
     let foreign = new Map();
     const zones = {};
     let marked = [];
+    let hiddenChildren = [];
 
     const readState = () => {
         const elements = L.readElements(taskbar);
@@ -179,6 +301,19 @@ export function panelEditorGroup(settings) {
             L.writeElements(taskbar, next.zones, next.visible);
     };
 
+    const isOff = payload => {
+        const [kind, id] = splitPayload(payload);
+        return kind === 'el' ? state.visible[id] === false : hidden.has(id);
+    };
+
+    const setShown = (payload, shown) => {
+        const [kind, id] = splitPayload(payload);
+        if (kind === 'el')
+            save({...state, visible: {...state.visible, [id]: shown}});
+        else
+            L.setHidden(settings, id, !shown);
+    };
+
     // --- aparência de cada peça ---
 
     const describe = payload => {
@@ -190,7 +325,9 @@ export function panelEditorGroup(settings) {
         if (L.isExternal(id)) {
             const f = foreign.get(id);
             const title = f?.title ?? id.slice(4);
-            return {title, short: title.split(/[\s(]/)[0].slice(0, 10), icon: f?.icon, off: hidden.has(id)};
+            const word = title.split(/[\s(]/)[0];
+            const short = f?.short ?? (word.length > 11 ? `${word.slice(0, 10)}…` : word);
+            return {title, short, icon: f?.icon, off: hidden.has(id)};
         }
         const info = L.ITEMS.find(i => i.id === id);
         return {...info, off: hidden.has(id)};
@@ -217,7 +354,7 @@ export function panelEditorGroup(settings) {
     // --- onde cai o que está sendo arrastado ---
 
     // {next, show}: o novo estado (null = não pode) e como destacar o destino.
-    const resolve = (payload, zone, x) => {
+    const resolve = (payload, zone, x, y) => {
         const [kind, id] = splitPayload(payload);
         const z = zones[zone];
         const nodes = z.nodes;
@@ -234,10 +371,16 @@ export function panelEditorGroup(settings) {
                     mark(nodes[nodes.length - 1].frame, 'zf-drop-after');
             }};
         };
+        // Peças em linhas (quebra): a peça i está "depois" do cursor se a linha
+        // dela começa abaixo dele, ou se é a mesma linha e ela fica à direita.
         for (let i = 0; i < nodes.length; i++) {
             const n = nodes[i];
             const b = bounds(n.frame, z.row);
             if (!b)
+                continue;
+            if (y < b.y - 4)
+                return gap(i);
+            if (y > b.y + b.h + 4)
                 continue;
             if (x < b.x)
                 return gap(i);
@@ -252,10 +395,13 @@ export function panelEditorGroup(settings) {
                 return gap(i);
             if (x > b.x + b.w - edge)
                 return gap(i + 1);
-            const [, fx] = z.row.translate_coordinates(n.frame, x, 0);
+            const [, fx] = z.row.translate_coordinates(n.frame, x, y);
             const index = indexAmong(n.chips, n.frame, fx);
+            // O grupo pode ter itens escondidos (sem chip): converte a posição.
+            const shownIds = n.chips.map(c => c._zfId);
+            const modelIndex = index < shownIds.length ? n.token.ids.indexOf(shownIds[index]) : n.token.ids.length;
             return {
-                next: L.joinGroup(state, id, n.token.box, n.token.gi, index),
+                next: L.joinGroup(state, id, n.token.box, n.token.gi, modelIndex),
                 show: () => {
                     mark(n.frame, 'zf-group-target');
                     if (index < n.chips.length)
@@ -345,23 +491,26 @@ export function panelEditorGroup(settings) {
 
     // --- peças ---
 
-    const makeChip = payload => {
+    const makeChip = (payload, inHiddenArea = false) => {
         const d = describe(payload);
         const chip = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
             spacing: 3,
             css_classes: ['zf-chip'],
-            tooltip_text: d.off ? `${d.title} (escondido)` : d.title,
+            tooltip_text: d.title,
             valign: Gtk.Align.CENTER,
         });
-        if (d.off)
-            chip.add_css_class('zf-chip-off');
+        chip._zfId = splitPayload(payload)[1];
         chip.append(new Gtk.Image({...iconFor(d.icon), pixel_size: 20}));
         chip.append(new Gtk.Label({label: d.short, css_classes: ['zf-chip-label']}));
         chip.set_cursor(Gdk.Cursor.new_from_name('grab', null));
 
         const click = new Gtk.GestureClick();
         click.connect('released', () => {
+            if (inHiddenArea) {
+                setShown(payload, true);
+                return;
+            }
             chip._zfPop?.unparent();
             chip._zfPop = makePopover(payload);
             chip._zfPop.set_parent(chip);
@@ -384,27 +533,26 @@ export function panelEditorGroup(settings) {
     };
 
     for (const zone of L.ZONES) {
-        const zoneBox = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, css_classes: ['zf-zone'],
-            hexpand: true, width_request: 56});
+        const zoneBox = new Gtk.Box({spacing: 8, css_classes: ['zf-zone']});
         zoneBox.append(new Gtk.Label({label: L.ZONE_TITLES[zone], css_classes: ['zf-zone-title'],
-            xalign: zone === 'left' ? 0 : zone === 'right' ? 1 : 0.5}));
-        const row = new Gtk.Box({
-            spacing: 12,
-            halign: zone === 'left' ? Gtk.Align.START : zone === 'right' ? Gtk.Align.END : Gtk.Align.CENTER,
-            vexpand: true,
-        });
+            width_chars: 8, xalign: 0, valign: Gtk.Align.CENTER}));
+        // Muitas peças num lado: quebram linha (a janela limita a largura).
+        const row = new WrapBox({valign: Gtk.Align.CENTER, hexpand: true});
         zoneBox.append(row);
         zones[zone] = {zoneBox, row, nodes: []};
 
         const drop = Gtk.DropTarget.new(GObject.TYPE_STRING, Gdk.DragAction.MOVE);
         drop.set_preload(true); // conteúdo já no 'motion', para destacar só o que pode
-        const rowX = (x, y) => zoneBox.translate_coordinates(row, x, y)[1];
+        const rowXY = (x, y) => {
+            const [, rx, ry] = zoneBox.translate_coordinates(row, x, y);
+            return [rx, ry];
+        };
         const hover = (target, x, y) => {
             clearFeedback();
             const value = target.get_value();
             if (typeof value !== 'string')
                 return Gdk.DragAction.MOVE; // conteúdo ainda chegando
-            const r = resolve(value, zone, rowX(x, y));
+            const r = resolve(value, zone, ...rowXY(x, y));
             if (!r.next)
                 return 0;
             r.show();
@@ -424,12 +572,20 @@ export function panelEditorGroup(settings) {
             clearFeedback();
             if (typeof value !== 'string')
                 return false;
-            const r = resolve(value, zone, rowX(x, y));
+            const r = resolve(value, zone, ...rowXY(x, y));
             if (!r.next)
                 return false;
             // Escreve depois que o arrastar terminar: a mudança recria as peças.
+            const wasOff = isOff(value);
             GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                save(r.next);
+                const [kind, id] = splitPayload(value);
+                if (wasOff && kind === 'el') {
+                    save({...r.next, visible: {...r.next.visible, [id]: true}});
+                } else {
+                    save(r.next);
+                    if (wasOff)
+                        L.setHidden(settings, id, false);
+                }
                 return GLib.SOURCE_REMOVE;
             });
             return true;
@@ -438,33 +594,66 @@ export function panelEditorGroup(settings) {
         bar.append(zoneBox);
     }
 
+    const hiddenDrop = Gtk.DropTarget.new(GObject.TYPE_STRING, Gdk.DragAction.MOVE);
+    hiddenDrop.connect('enter', () => {
+        hiddenArea.add_css_class('zf-hidden-hover');
+        return Gdk.DragAction.MOVE;
+    });
+    hiddenDrop.connect('leave', () => hiddenArea.remove_css_class('zf-hidden-hover'));
+    hiddenDrop.connect('drop', (_t, value) => {
+        hiddenArea.remove_css_class('zf-hidden-hover');
+        if (typeof value !== 'string' || isOff(value))
+            return false;
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            setShown(value, false);
+            return GLib.SOURCE_REMOVE;
+        });
+        return true;
+    });
+    hiddenArea.add_controller(hiddenDrop);
+
     const build = () => {
         clearFeedback();
         readState();
         const tokens = L.flatten(state);
+        const offList = [];
         for (const zone of L.ZONES) {
             const z = zones[zone];
             for (const n of z.nodes) {
                 n.chips.forEach(c => c._zfPop?.unparent());
                 z.row.remove(n.frame);
             }
-            z.nodes = tokens[zone].map(token => {
-                const frame = new Gtk.Box({spacing: 2, css_classes: ['zf-group-frame'], valign: Gtk.Align.CENTER});
-                let payloads;
-                if (token.kind === 'el') {
+            z.nodes = [];
+            for (const token of tokens[zone]) {
+                const all = token.kind === 'el' ? [`el:${token.el}`] : token.ids.map(id => `item:${id}`);
+                all.filter(isOff).forEach(p => offList.push(p));
+                const shown = all.filter(p => !isOff(p));
+                if (!shown.length)
+                    continue;
+                const frame = new Gtk.Box({spacing: 2, css_classes: ['zf-group-frame']});
+                if (token.kind === 'el')
                     frame.add_css_class('zf-sys-frame');
-                    payloads = [`el:${token.el}`];
-                } else {
-                    if (L.isExternal(token.ids[0]))
-                        frame.add_css_class('zf-ext-frame');
-                    payloads = token.ids.map(id => `item:${id}`);
-                }
-                const chips = payloads.map(makeChip);
+                else if (L.isExternal(token.ids[0]))
+                    frame.add_css_class('zf-ext-frame');
+                const chips = shown.map(p => makeChip(p));
                 chips.forEach(c => frame.append(c));
                 z.row.append(frame);
-                return {token, frame, chips};
-            });
+                z.nodes.push({token, frame, chips});
+            }
         }
+
+        for (const child of [...hiddenChildren])
+            hiddenArea.remove(child);
+        hiddenChildren = offList.map(p => {
+            const chip = makeChip(p, true);
+            chip.tooltip_text = `${describe(p).title} — clique para mostrar`;
+            hiddenArea.append(chip);
+            return chip.get_parent(); // o FlowBoxChild
+        });
+        hiddenArea.visible = true;
+        hiddenTitle.label = offList.length
+            ? 'Escondidos — arraste para o painel ou clique para mostrar; arraste peças da barra para cá para esconder'
+            : 'Escondidos — arraste peças da barra para cá para esconder';
     };
 
     let rebuildId = 0;
