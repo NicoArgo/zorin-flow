@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="org.gnome.shell.extensions.zorin-flow" path="/org/gnome/shell/extensions/zorin-flow/">
+    <key name="panel-left" type="as">
+      <default><![CDATA[['terminals', 'places', 'tiling']]]></default>
+      <summary>Applets à esquerda do painel, na ordem</summary>
+    </key>
+    <key name="panel-center" type="as">
+      <default><![CDATA[[]]]></default>
+      <summary>Applets no centro do painel, na ordem</summary>
+    </key>
+    <key name="panel-right" type="as">
+      <default><![CDATA[['clipboard', 'vampire']]]></default>
+      <summary>Applets à direita do painel, na ordem</summary>
+    </key>
     <key name="show-terminals" type="b">
       <default>true</default>
       <summary>Applet de terminais (botão + uma bolinha por janela na cor da pasta)</summary>

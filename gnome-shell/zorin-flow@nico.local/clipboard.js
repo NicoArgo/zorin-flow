@@ -18,6 +18,14 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const MAX_TEXT = 100000;
+
+// Fora do botão para sobreviver quando o applet é remontado (mudar de lugar no
+// painel); a extensão limpa ao ser desligada.
+let history = [];
+
+export function clearHistory() {
+    history = [];
+}
 const SECRET_MIME = 'x-kde-passwordManagerHint';
 
 function preview(text) {
@@ -30,7 +38,6 @@ class ClipboardButton extends PanelMenu.Button {
     _init(settings) {
         super._init(0.5, 'Zorin Flow: área de transferência');
         this._settings = settings;
-        this._history = [];
         this._clipboard = St.Clipboard.get_default();
 
         this.add_child(new St.Icon({icon_name: 'edit-paste-symbolic', style_class: 'system-status-icon'}));
@@ -60,9 +67,7 @@ class ClipboardButton extends PanelMenu.Button {
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         const clear = new PopupMenu.PopupMenuItem('Limpar histórico');
-        clear.connect('activate', () => {
-            this._history = [];
-        });
+        clear.connect('activate', () => clearHistory());
         this.menu.addMenuItem(clear);
 
         this._entry.clutter_text.connect('text-changed', () => this._rebuild());
@@ -114,7 +119,7 @@ class ClipboardButton extends PanelMenu.Button {
         this._clipboard.get_text(St.ClipboardType.CLIPBOARD, (_c, text) => {
             if (!text || !text.trim() || text.length > MAX_TEXT)
                 return;
-            this._history = [text, ...this._history.filter(t => t !== text)]
+            history = [text, ...history.filter(t => t !== text)]
                 .slice(0, this._settings.get_int('clipboard-size'));
             if (this.menu.isOpen)
                 this._rebuild();
@@ -124,11 +129,11 @@ class ClipboardButton extends PanelMenu.Button {
     _rebuild() {
         this._list.removeAll();
         const needle = this._entry.text.toLowerCase();
-        const items = this._history.filter(t => !needle || t.toLowerCase().includes(needle));
+        const items = history.filter(t => !needle || t.toLowerCase().includes(needle));
 
         if (!items.length) {
             const empty = new PopupMenu.PopupMenuItem(
-                this._history.length ? 'Nada combina com o filtro' : 'Nada copiado ainda',
+                history.length ? 'Nada combina com o filtro' : 'Nada copiado ainda',
                 {reactive: false});
             this._list.addMenuItem(empty);
             return;
@@ -181,6 +186,5 @@ class ClipboardButton extends PanelMenu.Button {
             GLib.source_remove(this._pasteId);
         this._vkbd?.run_dispose();
         this._vkbd = null;
-        this._history = [];
     }
 });

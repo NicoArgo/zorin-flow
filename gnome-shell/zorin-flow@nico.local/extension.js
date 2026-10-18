@@ -18,7 +18,8 @@ import {AltTabClose} from './alttab.js';
 import {TerminalBorders} from './borders.js';
 import {DesktopCorners} from './corner.js';
 import {forgetHidden} from './desktop.js';
-import {ClipboardButton} from './clipboard.js';
+import {ClipboardButton, clearHistory} from './clipboard.js';
+import {BOXES, readLayout} from './layout.js';
 import {PlacesButton} from './places.js';
 import {TerminalsButton} from './terminals.js';
 import {TilingButton, tilingAvailable} from './tiling.js';
@@ -32,35 +33,56 @@ export default class ZorinFlowExtension extends Extension {
         this._tooltip = new Tooltip();
         this._items = new Map();
 
-        // [chave, papel no painel, posição, caixa, fábrica]
-        this._parts = [
-            ['show-terminals', 'terminals', 0, 'left', () => new TerminalsButton(this._tooltip)],
-            ['show-places', 'places', 1, 'left', () => new PlacesButton(this._tooltip)],
-            ['clipboard-enabled', 'clipboard', 0, 'right', () => new ClipboardButton(this._settings)],
-            ['show-vampire', 'vampire', 0, 'right', () => new VampireButton(this._settings)],
-        ];
+        // papel no painel -> [chave que liga/desliga, fábrica]. Lado e ordem
+        // vêm das configurações (layout.js).
+        this._parts = new Map([
+            ['terminals', ['show-terminals', () => new TerminalsButton(this._tooltip)]],
+            ['places', ['show-places', () => new PlacesButton(this._tooltip)]],
+            ['clipboard', ['clipboard-enabled', () => new ClipboardButton(this._settings)]],
+            ['vampire', ['show-vampire', () => new VampireButton(this._settings)]],
+        ]);
         if (tilingAvailable())
-            this._parts.push(['show-tiling', 'tiling', 2, 'left', () => new TilingButton(this._settings)]);
-        this._settingsIds = [...this._parts.map(([key]) => key), 'terminal-borders', 'alttab-close', 'desktop-corner', 'desktop-corner-right'].map(key =>
+            this._parts.set('tiling', ['show-tiling', () => new TilingButton(this._settings)]);
+        this._layoutSig = null;
+
+        const keys = [
+            ...[...this._parts.values()].map(([key]) => key),
+            ...BOXES.map(box => `panel-${box}`),
+            'terminal-borders', 'alttab-close', 'desktop-corner', 'desktop-corner-right',
+        ];
+        this._settingsIds = keys.map(key =>
             this._settings.connect(`changed::${key}`, () => this._sync()));
         this._sync();
 
         this._wallsync = new WallSync(this._settings);
     }
 
-    _sync() {
-        for (const [key, role, position, box, make] of this._parts) {
-            const want = this._settings.get_boolean(key);
-            const have = this._items.get(role);
-            if (want && !have) {
-                const item = make();
-                Main.panel.addToStatusArea(`zorin-flow-${role}`, item, position, box);
+    _syncPanel() {
+        // Applets ligados, por lado, na ordem das configurações.
+        const layout = readLayout(this._settings);
+        const wanted = BOXES.map(box => [box, layout[box].filter(role =>
+            this._parts.has(role) && this._settings.get_boolean(this._parts.get(role)[0]))]);
+        const sig = JSON.stringify(wanted);
+        if (sig === this._layoutSig)
+            return;
+        this._layoutSig = sig;
+
+        // Remonta tudo: o addToStatusArea é o caminho que o painel do Zorin
+        // acompanha, e assim a ordem sai sempre exata.
+        for (const item of this._items.values())
+            item.destroy();
+        this._items.clear();
+        for (const [box, roles] of wanted) {
+            roles.forEach((role, index) => {
+                const item = this._parts.get(role)[1]();
+                Main.panel.addToStatusArea(`zorin-flow-${role}`, item, index, box);
                 this._items.set(role, item);
-            } else if (!want && have) {
-                have.destroy();
-                this._items.delete(role);
-            }
+            });
         }
+    }
+
+    _sync() {
+        this._syncPanel();
 
         const borders = this._settings.get_boolean('terminal-borders');
         if (borders && !this._borders) {
@@ -101,6 +123,7 @@ export default class ZorinFlowExtension extends Extension {
         this._corner?.destroy();
         this._corner = null;
         forgetHidden();
+        clearHistory();
         this._wallsync.destroy();
         this._tooltip.destroy();
         this._wallsync = null;

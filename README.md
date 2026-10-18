@@ -64,7 +64,9 @@ tocada.
 
 ## Configurações
 
-`gnome-extensions prefs zorin-flow@nico.local` — liga/desliga cada peça.
+`gnome-extensions prefs zorin-flow@nico.local` — liga/desliga cada peça e, em
+**Posição no painel**, escolhe o lado (esquerda/centro/direita) e a ordem de
+cada applet; o painel muda na hora.
 
 ## Licença
 
