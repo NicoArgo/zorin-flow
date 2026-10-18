@@ -4,6 +4,7 @@
 // escolhe o layout dele. Cada janela nova vai para o espaço livre do layout
 // mais perto do centro; sem espaço livre, ela abre solta. Super+Y alterna.
 
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
@@ -15,6 +16,8 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const TILING_SCHEMA = 'org.gnome.shell.extensions.zorin-tiling-shell';
+const THUMB_W = 46;
+const THUMB_H = 28;
 
 // Nome legível dos layouts que vêm com o Zorin; outros aparecem pelo id.
 const LAYOUT_NAMES = {
@@ -66,10 +69,45 @@ class TilingButton extends PanelMenu.Button {
 
     _layouts() {
         try {
-            return JSON.parse(this._tiling.get_string('layouts-json')).map(l => l.id);
+            return JSON.parse(this._tiling.get_string('layouts-json'));
         } catch {
             return [];
         }
+    }
+
+    // Miniatura do layout: cada espaço vira um retângulo arredondado.
+    _thumbnail(tiles, active) {
+        const area = new St.DrawingArea({
+            width: THUMB_W,
+            height: THUMB_H,
+            style_class: 'zf-tiling-thumb',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        area.connect('repaint', a => {
+            const cr = a.get_context();
+            const [w, h] = a.get_surface_size();
+            const gap = 2;
+            const radius = 2.5;
+            for (const t of tiles) {
+                const x = t.x * w + gap / 2;
+                const y = t.y * h + gap / 2;
+                const tw = t.width * w - gap;
+                const th = t.height * h - gap;
+                cr.newSubPath();
+                cr.arc(x + tw - radius, y + radius, radius, -Math.PI / 2, 0);
+                cr.arc(x + tw - radius, y + th - radius, radius, 0, Math.PI / 2);
+                cr.arc(x + radius, y + th - radius, radius, Math.PI / 2, Math.PI);
+                cr.arc(x + radius, y + radius, radius, Math.PI, 1.5 * Math.PI);
+                cr.closePath();
+            }
+            if (active)
+                cr.setSourceRGBA(0.384, 0.627, 0.918, 0.95); // #62a0ea
+            else
+                cr.setSourceRGBA(1, 1, 1, 0.35);
+            cr.fill();
+            cr.$dispose();
+        });
+        return area;
     }
 
     _currentLayout() {
@@ -103,9 +141,10 @@ class TilingButton extends PanelMenu.Button {
 
         this._layoutSection.removeAll();
         const current = this._currentLayout();
-        for (const id of this._layouts()) {
+        for (const {id, tiles} of this._layouts()) {
             const item = new PopupMenu.PopupMenuItem(LAYOUT_NAMES[id] ?? id);
             item.setOrnament(id === current ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
+            item.insert_child_below(this._thumbnail(tiles ?? [], id === current), item.label);
             item.connect('activate', () => this._setLayout(id));
             this._layoutSection.addMenuItem(item);
         }
