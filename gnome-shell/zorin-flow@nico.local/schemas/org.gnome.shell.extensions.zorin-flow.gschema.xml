@@ -3,7 +3,11 @@
   <schema id="org.gnome.shell.extensions.zorin-flow" path="/org/gnome/shell/extensions/zorin-flow/">
     <key name="panel-layout" type="s">
       <default>''</default>
-      <summary>Grupos de itens por lado do painel (JSON); vazio = padrão</summary>
+      <summary>Grupos de itens dentro de cada caixa do painel (JSON); vazio = padrão</summary>
+    </key>
+    <key name="panel-foreign" type="s">
+      <default>''</default>
+      <summary>Itens de outras extensões no painel (publicado pela extensão, lido pelo editor)</summary>
     </key>
     <key name="panel-hidden" type="as">
       <default><![CDATA[[]]]></default>

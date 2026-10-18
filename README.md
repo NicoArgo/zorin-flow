@@ -64,11 +64,20 @@ tocada.
 
 ## Configurações
 
-Pela engrenagem no painel, ou `gnome-extensions prefs zorin-flow@nico.local`:
-liga/desliga cada peça e, em **Posição no painel**, mostra uma barra como a do
-painel com um chip por applet — arraste para mudar o lado
-(esquerda/centro/direita) e a ordem, ou clique num chip para movê-lo por
-botões. O painel muda na hora.
+Pela engrenagem no painel, ou `gnome-extensions prefs zorin-flow@nico.local`.
+No topo fica o **editor do painel**: uma barra como a do painel com **tudo**
+que há nele — menu Zorin, Atividades, apps abertos, menu do sistema, data e
+hora, os itens do Zorin Flow e os de outras extensões (o HD, a bandeja…).
+
+- Arraste qualquer peça para mudar o lado (esquerda/centro/direita) e a ordem.
+- Itens do Zorin Flow são independentes (novo terminal, bolinhas, Imagens,
+  Downloads, Área de trabalho, Tiling, Config., Transferência, Vampiro) e
+  agrupáveis: solte um item dentro da moldura de outro para ficarem colados
+  no mesmo botão; solte no espaço entre molduras para separar.
+- Clique numa peça para separar/juntar, mudar de lado ou esconder.
+
+A ordem dos elementos do sistema é gravada na configuração do próprio painel
+do Zorin; o que vai dentro das caixas de applets, no Zorin Flow.
 
 ## Licença
 
