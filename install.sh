@@ -103,6 +103,15 @@ else
     echo "   Zorin Tiling Shell não encontrado; pulando"
 fi
 
+say "Steam: compilação de shaders com 4 threads (em vez de todos)"
+# Pré-compilar shaders Vulkan com os 16 threads travou o PC inteiro abrindo o
+# Cyberpunk. Com 4 demora mais, mas não derruba o sistema. Vale ao reabrir a Steam.
+if [[ -d $HOME/.steam/steam ]]; then
+    link "$ROOT/steam/steam_dev.cfg" "$HOME/.steam/steam/steam_dev.cfg"
+else
+    echo "   Steam não encontrada; pulando"
+fi
+
 cat <<EOF
 
 Pronto. Para ativar:

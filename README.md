@@ -23,6 +23,7 @@ auto-reapply via APT: update do sistema não desfaz nada.
 | **Imagens / Downloads / Mostrar área de trabalho** no painel | botões do cosmic-applets | `places.js` |
 | **Modo vampiro**: o PC só dorme quando você manda (1 h, 3 h, até desligar) | cosmic-applets | `vampire.js` |
 | **Super+V**: histórico da área de transferência com filtro; escolher já cola | cosmic-clipboard-history | `clipboard.js` |
+| **Steam sem travar compilando shaders**: pré-compilação Vulkan limitada a 4 threads | — (novo) | `steam/steam_dev.cfg` |
 | **Destaque segue o papel de parede** (acento do Zorin mais próximo) | cosmic-wallsync | `wallsync.js`, `bin/zflow-wallsync` |
 
 Ficaram de fora: gestos de três dedos (o Zorin já tem o Touchégg), "Abrir no

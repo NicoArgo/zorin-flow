@@ -56,6 +56,9 @@ if grep -qF "# >>> zorin-flow >>>" "$BASHRC" 2>/dev/null; then
     sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$BASHRC"
 fi
 
+say "Steam: shaders de volta ao padrão"
+unlink_ours "$HOME/.steam/steam/steam_dev.cfg"
+
 say "Comandos"
 unlink_ours "$HOME/.local/bin/zflow-rule"
 unlink_ours "$HOME/.local/bin/zflow-wallsync"
