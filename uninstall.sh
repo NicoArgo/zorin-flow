@@ -43,6 +43,12 @@ if [[ -f $CONFIG/backup-toggle-message-tray ]]; then
     rm -f "$CONFIG/backup-toggle-message-tray"
 fi
 
+say "Captura de tela: atalhos originais"
+if [[ -f $CONFIG/backup-show-screenshot-ui ]]; then
+    gsettings set org.gnome.shell.keybindings show-screenshot-ui "$(cat "$CONFIG/backup-show-screenshot-ui")"
+    rm -f "$CONFIG/backup-show-screenshot-ui"
+fi
+
 say "Atalhos de tiling de volta"
 "$ROOT/bin/zflow-tiling-keys" restore || true
 

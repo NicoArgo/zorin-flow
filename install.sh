@@ -96,6 +96,24 @@ EOF
     echo "   Super+V liberado (notificações continuam no Super+M)"
 fi
 
+say "Captura de tela também no Ins e no Super+Shift+S"
+# Nem todo teclado tem Print fácil de achar. O Print continua; os nossos são
+# acrescentados e o valor original (sem eles) fica guardado para o uninstall.
+python3 - "$CONFIG/backup-show-screenshot-ui" <<'EOF'
+import os, sys
+from gi.repository import Gio, GLib
+OURS = ["Insert", "<Shift><Super>s"]
+backup = sys.argv[1]
+s = Gio.Settings.new("org.gnome.shell.keybindings")
+keys = s.get_strv("show-screenshot-ui")
+if not os.path.exists(backup):
+    orig = [k for k in keys if k not in OURS]
+    with open(backup, "w") as f:
+        f.write(GLib.Variant("as", orig).print_(False) + "\n")
+s.set_strv("show-screenshot-ui", keys + [k for k in OURS if k not in keys])
+Gio.Settings.sync()
+EOF
+
 say "Tiling: atalhos do Pop (Super+setas foco, Super+Shift+setas move)"
 if gsettings list-schemas | grep -qx org.gnome.shell.extensions.zorin-tiling-shell; then
     "$ROOT/bin/zflow-tiling-keys" apply
